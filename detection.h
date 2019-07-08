@@ -19,6 +19,6 @@ public:
     const double BoardDepth = 1;
 
     Detection(int i);
-    std::vector<std::tuple<int,int,int>> SingleDetect(); //Widrh, Height, Depth
+    std::pair<std::vector<std::tuple<int,int,int>>, std::vector<std::tuple<int,int,int>>>  SingleDetect(); //Widrh, Height, Depth
     std::vector<std::vector<double>> getDepth();
 };
