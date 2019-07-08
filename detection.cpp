@@ -2,7 +2,7 @@
 
 
 
-Detection::Detection(int i = 1){
+Detection::Detection(){
     data = getDepth();
 }
 

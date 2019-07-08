@@ -6,5 +6,4 @@ class Manager{
 public:
     Manager();
     void RunSingleDetection();
-    ~Manager();     
 };
