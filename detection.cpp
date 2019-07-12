@@ -3,6 +3,7 @@
 
 
 Detection::Detection(){
+    p.start();
     data = getDepth();
 }
 
@@ -11,12 +12,11 @@ std::vector<std::vector<double>> Detection::getDepth(){
     int BoardWidth = BoardPos.second.first - BoardPos.first.first;
     int BoardHeight = BoardPos.second.second - BoardPos.first.second;
     
-    rs2::pipeline p;
     rs2::frameset frames = p.wait_for_frames();
     rs2::depth_frame depth = frames.get_depth_frame();
 
 
-    std::vector<std::vector<double>> depth_data(BoardHeight, std::vector<double>(BoardWidth));
+    std::vector<std::vector<double>> depth_data(BoardWidth, std::vector<double>(BoardHeight));
 
     for(int i = BoardPos.first.first;i < BoardPos.second.first;i++){
         for(int j = BoardPos.first.second;j < BoardPos.second.second;j++){
@@ -27,8 +27,8 @@ std::vector<std::vector<double>> Detection::getDepth(){
 }
 
 std::pair<std::vector<std::tuple<int,int,int>>,std::vector<std::tuple<int,int,int>>> Detection::SingleDetect(){
-    const double detect_loss = 0;
-    const double dispersion_accuracy = 0;
+    const double detect_loss = 1.0;
+    const double dispersion_accuracy = 0.01;
 
     std::vector<std::vector<double>> current_data = getDepth();
 
@@ -48,6 +48,7 @@ std::pair<std::vector<std::tuple<int,int,int>>,std::vector<std::tuple<int,int,in
                     int pos_x = i + x;
                     int pos_y = j + y;
                     if(abs(current_data.at(pos_x).at(pos_y) - data.at(pos_x).at(pos_y)) > detect_loss){
+     //                   std::cout<<x<<" "<<y<<std::endl;
                         if(current_data.at(pos_x).at(pos_y) - data.at(pos_x).at(pos_y) > 0){
                             upper_count++;
                         }else{
@@ -72,8 +73,10 @@ std::pair<std::vector<std::tuple<int,int,int>>,std::vector<std::tuple<int,int,in
             }
             dispersion /= (LegoHeight * LegoWidth);
 
-            if(dispersion_accuracy < dispersion) //分散が大きいデータは無視
+            if(dispersion_accuracy < dispersion){ //分散が大きいデータは無視
                 flat_count = 1e9;
+          //      std::cout<<"despersion"<<std::endl;
+            }
 
             if(upper_count > lower_count && upper_count > flat_count){
                 std::tuple<int, int, int> detect_block_pos = std::make_tuple(i, j, std::round((sum_z - BoardDepth) / LegoDepth)-1);
