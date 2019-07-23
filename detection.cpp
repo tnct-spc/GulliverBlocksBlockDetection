@@ -14,12 +14,13 @@ std::pair<std::vector<std::tuple<int, int, int>>, std::vector<std::tuple<int, in
 }
 
 void Detection::detectBoard(){
-    auto angle = [&]( cv::Point pt1, cv::Point pt2, cv::Point pt0 )
+    auto angle = []( cv::Point pt1, cv::Point pt2, cv::Point pt0 )
     {
         double dx1 = pt1.x - pt0.x;
         double dy1 = pt1.y - pt0.y;
         double dx2 = pt2.x - pt0.x;
-        double dy2 = pt2.y - pt0.y;return (dx1*dx2 + dy1*dy2)/sqrt((dx1*dx1 + dy1*dy1)*(dx2*dx2 + dy2*dy2) + 1e-10);
+        double dy2 = pt2.y - pt0.y;
+        return (dx1*dx2 + dy1*dy2)/sqrt((dx1*dx1 + dy1*dy1)*(dx2*dx2 + dy2*dy2) + 1e-10);
     };
     
     auto findSquares = [&]( const cv::Mat& image, std::vector<std::vector<cv::Point> >& squares )
@@ -90,41 +91,55 @@ void Detection::detectBoard(){
             }
         }
     };
+    auto frame_to_mat = [](const rs2::frame& f){
+        auto vf = f.as<rs2::video_frame>();
+        const int w = vf.get_width();
+        const int h = vf.get_height();
+
+        if (f.get_profile().format() == RS2_FORMAT_BGR8)
+        {
+            return cv::Mat(cv::Size(w, h), CV_8UC3, (void*)f.get_data(), cv::Mat::AUTO_STEP);
+        }
+        else if (f.get_profile().format() == RS2_FORMAT_RGB8)
+        {
+            auto r = cv::Mat(cv::Size(w, h), CV_8UC3, (void*)f.get_data(), cv::Mat::AUTO_STEP);
+            cv::cvtColor(r, r, cv::COLOR_RGB2BGR);
+            return r;
+        }
+        else if (f.get_profile().format() == RS2_FORMAT_Z16)
+        {
+            return cv::Mat(cv::Size(w, h), CV_16UC1, (void*)f.get_data(), cv::Mat::AUTO_STEP);
+        }
+        else if (f.get_profile().format() == RS2_FORMAT_Y8)
+        {
+            return cv::Mat(cv::Size(w, h), CV_8UC1, (void*)f.get_data(), cv::Mat::AUTO_STEP);
+        }
+        else if (f.get_profile().format() == RS2_FORMAT_DISPARITY32)
+        {
+            return cv::Mat(cv::Size(w, h), CV_32FC1, (void*)f.get_data(), cv::Mat::AUTO_STEP);
+        }
+
+        throw std::runtime_error("Frame format is not supported yet!");
+    };
     BoardPos.clear();
     std::vector<std::vector<cv::Point> > squares;
 
 
 
     rs2::colorizer color_map;
-    pipe.wait_for_frames();
+    rs2::rates_printer printer;
+
 
     // Wait for the next set of frames from the camera. Now that autoexposure, etc.
     // has settled, we will write these to disk
-    std::string filename;
-    for (auto&& frame : pipe.wait_for_frames())
-    {
-        // We can only save video frames as pngs, so we skip the rest
-        if (auto vf = frame.as<rs2::video_frame>())
-        {
-            auto stream = frame.get_profile().stream_type();
-            // Use the colorizer to get an rgb image for the depth stream
-            if (vf.is<rs2::depth_frame>()) vf = color_map.process(frame);
+    
 
-            // Write images to disk
-            std::stringstream png_file;
-            png_file << "rs-save-to-disk-output-" << vf.get_profile().stream_name() << ".png";
-            stbi_write_png(png_file.str().c_str(), vf.get_width(), vf.get_height(),
-                           vf.get_bytes_per_pixel(), vf.get_data(), vf.get_stride_in_bytes());
-            std::cout << "Saved " << png_file.str() << std::endl;
-            filename = png_file.str();
-        }
-    }
-
-    cv::Mat image = imread(filename, cv::IMREAD_COLOR);
-
+    cv::Mat image = frame_to_mat( pipe.wait_for_frames().    // Wait for next set of frames from the camera
+                             apply_filter(printer).     // Print each enabled stream frame rate
+                             apply_filter(color_map));
 
     if( image.empty() ){
-      std::cerr << "Couldn't load " << filename << std::endl;
+      std::cerr << "Couldn't load " << std::endl;
       std::abort();
     }
     
