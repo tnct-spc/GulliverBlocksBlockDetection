@@ -124,19 +124,17 @@ void Detection::detectBoard(){
     BoardPos.clear();
     std::vector<std::vector<cv::Point> > squares;
 
-
-
     rs2::colorizer color_map;
     rs2::rates_printer printer;
-
 
     // Wait for the next set of frames from the camera. Now that autoexposure, etc.
     // has settled, we will write these to disk
     
+    cv::Mat image = frame_to_mat( pipe.wait_for_frames().get_color_frame());
 
-    cv::Mat image = frame_to_mat( pipe.wait_for_frames().    // Wait for next set of frames from the camera
-                             apply_filter(printer).     // Print each enabled stream frame rate
-                             apply_filter(color_map));
+    std::cout<<"capture"<<std::endl;
+    cv::imshow("realsense", image);
+    cv::waitKey(5000);
 
     if( image.empty() ){
       std::cerr << "Couldn't load " << std::endl;
@@ -169,7 +167,7 @@ void Detection::detectBoard(){
 
       }
     }
-    
+    std::cout<<vec.size()<<std::endl;
     frame.at(0).first /= vec.size()/4;
     frame.at(0).second /= vec.size()/4;
     frame.at(1).first /= vec.size()/4;

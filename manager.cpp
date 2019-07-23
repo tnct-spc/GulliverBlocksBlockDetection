@@ -5,7 +5,9 @@ Manager::Manager(){
 }
 
 void Manager::RunSingleDetection(){
+    std::cout<<"Start detection"<<std::endl;
     Detection detection;
+    std::cout<<"Finish constractor"<<std::endl;
     /* 
     while(1){
         std::pair<std::vector<std::tuple<int, int, int>>, std::vector<std::tuple<int,int,int>>> detect_info = detection.singleDetect();
