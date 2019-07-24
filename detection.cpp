@@ -3,7 +3,6 @@
 Detection::Detection(){
     pipe.start();
     detectBoard();
-    data = getDepth();
 }
 
 std::vector<std::vector<double>> Detection::getDepth(){
@@ -139,8 +138,6 @@ void Detection::detectBoard(){
     rs2::colorizer color_map;
     rs2::rates_printer printer;
 
-    // Wait for the next set of frames from the camera. Now that autoexposure, etc.
-    // has settled, we will write these to disk
     do {
         auto im = pipe.wait_for_frames().get_color_frame();
         cv::Mat image = frame_to_mat(im);
@@ -199,15 +196,30 @@ void Detection::detectBoard(){
     rs2::frameset pframes = pipe.wait_for_frames();
     rs2::depth_frame depth = pframes.get_depth_frame();
 
-    std::vector<std::vector<float>> dpoint(4);
     rs2_intrinsics intr = pframes.get_profile().as<rs2::video_stream_profile>().get_intrinsics(); // Calibration data
 
 
     for(int i = 0;i < 4;i++){
-        const float qpixel[2] = {frame_pos.at(i).first, frame_pos.at(i).second};
-        float qpoint[3];
-        rs2_deproject_pixel_to_point(qpoint, &intr, qpixel, depth.get_distance(qpixel[0], qpixel[1]));
-        BoardPos.push_back(std::make_tuple(qpoint[0], qpoint[1], qpoint[2]));
-        std::cout<<qpoint[0]<<" "<<qpoint[1]<<" "<<qpoint[2]<<std::endl;
+        BoardPos.push_back(translatePixelToP3Doint((float)frame_pos.at(i).first, (float)frame_pos.at(i).second, intr, depth));
+        std::cout<<std::get<0>(BoardPos.back())<<" "<<std::get<1>(BoardPos.back())<<" "<<std::get<2>(BoardPos.back())<<std::endl;
     }
+}
+
+std::tuple<float, float, float> Detection::translatePixelToP3Doint(float x, float y){
+    rs2::frameset pframes = pipe.wait_for_frames();
+    rs2_intrinsics intr = pframes.get_profile().as<rs2::video_stream_profile>().get_intrinsics(); // Calibration data
+    float pixel[2] = {x, y};
+    float qpoint[3];
+    rs2::depth_frame depth = pframes.get_depth_frame();
+    rs2_deproject_pixel_to_point(qpoint, &intr, pixel, depth.get_distance(pixel[0], pixel[1]));
+    
+    return std::make_tuple(qpoint[0], qpoint[1], qpoint[2]);
+}
+
+std::tuple<float, float, float> Detection::translatePixelToP3Doint(float x, float y, rs2_intrinsics intr, rs2::depth_frame depth){
+    float pixel[2] = {x, y};
+    float qpoint[3];
+    rs2_deproject_pixel_to_point(qpoint, &intr, pixel, depth.get_distance(pixel[0], pixel[1]));
+    
+    return std::make_tuple(qpoint[0], qpoint[1], qpoint[2]);
 }

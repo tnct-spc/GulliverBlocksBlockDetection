@@ -33,15 +33,13 @@ private:
 
 public:
     std::vector<std::tuple<float, float, float>> BoardPos;
-    const double LegoDepth = 0.01;
-    const int LegoWidthNumber = 48;
-    const int LegoHeightNumber = 42;
-
-    const double BoardDepth = 0.002;
 
     Detection();
     std::pair<std::vector<std::tuple<int, int, int>>, std::vector<std::tuple<int, int, int>>>  singleDetect(); //Widrh, Height, Depth
     std::vector<std::vector<double>> getDepth();
     void detectBoard();
+    std::tuple<float, float, float> translatePixelToP3Doint(float x, float y);
+    std::tuple<float, float, float> translatePixelToP3Doint(float x, float y, rs2_intrinsics intr, rs2::depth_frame depth);
+
     rs2::pipeline pipe;
 };
