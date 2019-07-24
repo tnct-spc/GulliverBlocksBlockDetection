@@ -1,11 +1,19 @@
 #include <librealsense2/rs.hpp> 
+#include <librealsense2/rsutil.h>
+
+#include "opencv2/core.hpp"
+#include "opencv2/imgproc.hpp"
+#include "opencv2/imgcodecs.hpp"
+
+#include <opencv2/opencv.hpp>   // Include OpenCV API
+#include <exception>
+
+
 #include <vector>
 #include <utility>
 #include <cmath>
 #include <iostream>
-#include "opencv2/core.hpp"
-#include "opencv2/imgproc.hpp"
-#include "opencv2/imgcodecs.hpp"
+#include <math.h>
 
 class Detection{
 private:
@@ -13,17 +21,14 @@ private:
     std::vector<std::vector<double>> data;
 
 public:
-    std::pair<std::pair<int, int>, std::pair<int, int>> BoardPos;
-    const double LegoDepth = 0.01;
-    const int LegoWidthNumber = 48;
-    const int LegoHeightNumber = 42;
-    const double LegoWidth = (BoardPos.second.first - BoardPos.first.first) / LegoWidthNumber;
-    const double LegoHeight = (BoardPos.second.second - BoardPos.first.second) / LegoHeightNumber;
-    const double BoardDepth = 0.002;
+    std::vector<std::tuple<float, float, float>> BoardPos;
 
     Detection();
     std::pair<std::vector<std::tuple<int, int, int>>, std::vector<std::tuple<int, int, int>>>  singleDetect(); //Widrh, Height, Depth
     std::vector<std::vector<double>> getDepth();
-    std::pair<std::pair<int, int>, std::pair<int, int>> detectBoard();
+    void detectBoard();
+    std::tuple<float, float, float> translatePixelToP3Doint(float x, float y);
+    std::tuple<float, float, float> translatePixelToP3Doint(float x, float y, rs2_intrinsics intr, rs2::depth_frame depth);
+
     rs2::pipeline pipe;
 };
