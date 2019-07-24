@@ -5,8 +5,6 @@
 #include "opencv2/imgproc.hpp"
 #include "opencv2/imgcodecs.hpp"
 
-#pragma once
-
 #include <opencv2/opencv.hpp>   // Include OpenCV API
 #include <exception>
 
@@ -16,15 +14,6 @@
 #include <cmath>
 #include <iostream>
 #include <math.h>
-#include <queue>
-#include <unordered_set>
-#include <map>
-#include <thread>
-#include <atomic>
-#include <mutex>
-#include <fstream>              
-#include <iostream>             
-#include <sstream>
 
 class Detection{
 private:
