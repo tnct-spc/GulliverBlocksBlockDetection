@@ -13,6 +13,10 @@ std::pair<std::vector<std::tuple<int, int, int>>, std::vector<std::tuple<int, in
 }
 
 void Detection::detectBoard(){
+    //realsenseで写真取ってopencvで矩形認識 -> 得られたpixelをさらにrealsenseで三次元座標に
+    //https://github.com/opencv/opencv/blob/master/samples/cpp/squares.cpp <- 矩形認識
+    //https://github.com/IntelRealSense/librealsense/blob/master/wrappers/opencv/cv-helpers.hpp <- opencvとrealsenseの連携
+    //https://github.com/IntelRealSense/librealsense/tree/master/examples/measure  <- pixelを三次元座標に変換
     auto angle = []( cv::Point pt1, cv::Point pt2, cv::Point pt0 )
     {
         double dx1 = pt1.x - pt0.x;
@@ -29,12 +33,11 @@ void Detection::detectBoard(){
         
         cv::Mat pyr, timg, gray0(image.size(), CV_8U), gray;
         
-        // down-scale and upscale the image to filter out the noise
         cv::pyrDown(image, pyr, cv::Size(image.cols/2, image.rows/2));
         cv::pyrUp(pyr, timg, image.size());
         std::vector<std::vector<cv::Point> > contours;
         
-        // find squares in every color plane of the image
+        
         for( int c = 0; c < 3; c++ )
         {
             int ch[] = {c, 0};
@@ -43,30 +46,14 @@ void Detection::detectBoard(){
             // try several threshold levels
             for( int l = 0; l < N; l++ )
             {
-                // hack: use Canny instead of zero threshold level.
-                // Canny helps to catch squares with gradient shading
-                // apply Canny. Take the upper threshold from slider
-                // and set the lower to 0 (which forces edges merging)
                 Canny(gray0, gray, 0, thresh, 5);
-                // dilate canny output to remove potential
-                // holes between edge segments
                 dilate(gray, gray, cv::Mat(), cv::Point(-1,-1));
-                // find contours and store them all as a list
                 findContours(gray, contours, cv::RETR_LIST, cv::CHAIN_APPROX_SIMPLE);
                 std::vector<cv::Point> approx;
                 
-                // test each contour
                 for( size_t i = 0; i < contours.size(); i++ )
                 {
-                    // approximate contour with accuracy proportional
-                    // to the contour perimeter
                     cv::approxPolyDP(contours[i], approx, cv::arcLength(contours[i], true)*0.02, true);
-                    // square contours should have 4 vertices after approximation
-                    // relatively large area (to filter out noisy contours)
-                    // and be convex
-                    // Note: absolute value of an area is used because
-                    // area may be positive or negative - in accordance with the
-                    // contour orientation
                     if( approx.size() == 4 &&
                     std::fabs(contourArea(approx)) > 1000 &&
                     cv::isContourConvex(approx) )
@@ -75,14 +62,10 @@ void Detection::detectBoard(){
 
                         for( int j = 2; j < 5; j++ )
                         {
-                            // find the maximum cosine of the angle between joint edges
                             double cosine = std::fabs(angle(approx[j%4], approx[j-2], approx[j-1]));
                             maxCosine = MAX(maxCosine, cosine);
                         }
 
-                        // if cosines of all angles are small
-                        // (all angles are ~90 degree) then write quandrange
-                        // vertices to resultant sequence
                         if( maxCosine < 0.3 )
                             squares.push_back(approx);
                     }
@@ -129,7 +112,7 @@ void Detection::detectBoard(){
             polylines(image, &p, &n, 1, true, cv::Scalar(0,255,0), 3, cv::LINE_AA);
         }
 
-        imshow("uku", image);
+        imshow("TestSquares", image);
     };
 
     BoardPos.clear();
