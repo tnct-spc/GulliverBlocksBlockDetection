@@ -121,6 +121,18 @@ void Detection::detectBoard(){
 
         throw std::runtime_error("Frame format is not supported yet!");
     };
+    auto  drawSquares = []( cv::Mat& image,const std::vector<std::vector<cv::Point> >& squares )
+    {
+        for( size_t i = 0; i < squares.size(); i++ )
+        {
+            const cv::Point* p = &squares[i][0];
+            int n = (int)squares[i].size();
+            polylines(image, &p, &n, 1, true, cv::Scalar(0,255,0), 3, cv::LINE_AA);
+        }
+
+        imshow("uku", image);
+    };
+
     BoardPos.clear();
     std::vector<std::vector<cv::Point> > squares;
 
@@ -129,57 +141,58 @@ void Detection::detectBoard(){
 
     // Wait for the next set of frames from the camera. Now that autoexposure, etc.
     // has settled, we will write these to disk
+    do {
+        auto im = pipe.wait_for_frames().get_color_frame();
+        cv::Mat image = frame_to_mat(im);
+        
+        std::cout<<"capture"<<std::endl;
+        if( image.empty() ){
+            std::cerr << "Couldn't load " << std::endl;
+            std::abort();
+        }
+
+        findSquares(image, squares);
+    }while(squares.empty());
+   // drawSquares(image, squares);
     
-    cv::Mat image = frame_to_mat( pipe.wait_for_frames().get_color_frame());
-
-    std::cout<<"capture"<<std::endl;
-    cv::imshow("realsense", image);
-    cv::waitKey(5000);
-
-    if( image.empty() ){
-      std::cerr << "Couldn't load " << std::endl;
-      std::abort();
-    }
+   // int c = cv::waitKey();
     
-    findSquares(image, squares);
-
-    std::vector<std::pair<int, int>> vec;
+    std::vector<std::pair<int, int>> _frame_pos;
     for(auto a : squares){
-        for(auto b : a)vec.push_back(std::make_pair(b.x, b.y));
+        for(auto b : a)_frame_pos.push_back(std::make_pair(b.x, b.y));
     }
-    sort(vec.begin(), vec.end());
-    std::vector<std::pair<int, int>> frame = { std::make_pair(0, 0), std::make_pair(0, 0), std::make_pair(0, 0), std::make_pair(0, 0)};
-    for(int i = 0;i < vec.size();i++){
-      if(i < vec.size()/4){
-        frame.at(0).first += vec.at(i).first;
-        frame.at(0).second += vec.at(i).second;
-      }else if (i < vec.size()/2){
-        frame.at(1).first += vec.at(i).first;
-        frame.at(1).second += vec.at(i).second;
+    std::sort(_frame_pos.begin(), _frame_pos.end());
+    std::vector<std::pair<int, int>> frame_pos = { std::make_pair(0, 0), std::make_pair(0, 0), std::make_pair(0, 0), std::make_pair(0, 0)};
+    for(int i = 0;i < _frame_pos.size();i++){
+      if(i < _frame_pos.size()/4){
+        frame_pos.at(0).first += _frame_pos.at(i).first;
+        frame_pos.at(0).second += _frame_pos.at(i).second;
+      }else if (i < _frame_pos.size()/2){
+        frame_pos.at(1).first += _frame_pos.at(i).first;
+        frame_pos.at(1).second += _frame_pos.at(i).second;
 
-      }else if (i < vec.size()/4*3){
-        frame.at(2).first += vec.at(i).first;
-        frame.at(2).second += vec.at(i).second;
+      }else if (i < _frame_pos.size()/4*3){
+        frame_pos.at(2).first += _frame_pos.at(i).first;
+        frame_pos.at(2).second += _frame_pos.at(i).second;
 
       }else{
-        frame.at(3).first += vec.at(i).first;
-        frame.at(3).second += vec.at(i).second;
+        frame_pos.at(3).first += _frame_pos.at(i).first;
+        frame_pos.at(3).second += _frame_pos.at(i).second;
 
       }
     }
-    std::cout<<vec.size()<<std::endl;
-    frame.at(0).first /= vec.size()/4;
-    frame.at(0).second /= vec.size()/4;
-    frame.at(1).first /= vec.size()/4;
-    frame.at(1).second /= vec.size()/4;
-    frame.at(2).first /= vec.size()/4;
-    frame.at(2).second /= vec.size()/4;
-    frame.at(3).first /= vec.size()/4;
-    frame.at(3).second /= vec.size()/4;
+    frame_pos.at(0).first /= _frame_pos.size()/4;
+    frame_pos.at(0).second /= _frame_pos.size()/4;
+    frame_pos.at(1).first /= _frame_pos.size()/4;
+    frame_pos.at(1).second /= _frame_pos.size()/4;
+    frame_pos.at(2).first /= _frame_pos.size()/4;
+    frame_pos.at(2).second /= _frame_pos.size()/4;
+    frame_pos.at(3).first /= _frame_pos.size()/4;
+    frame_pos.at(3).second /= _frame_pos.size()/4;
     
     std::cout<<"Board pos in piexl"<<std::endl;
     for(int i = 0;i < 4;i++){
-      std::cout<<"("<<frame.at(i).first<<" "<<frame.at(i).second<<")";
+      std::cout<<"("<<frame_pos.at(i).first<<" "<<frame_pos.at(i).second<<")";
     }
     std::cout<<std::endl;
 
@@ -191,7 +204,7 @@ void Detection::detectBoard(){
 
 
     for(int i = 0;i < 4;i++){
-        const float qpixel[2] = {frame.at(i).first, frame.at(i).second};
+        const float qpixel[2] = {frame_pos.at(i).first, frame_pos.at(i).second};
         float qpoint[3];
         rs2_deproject_pixel_to_point(qpoint, &intr, qpixel, depth.get_distance(qpixel[0], qpixel[1]));
         BoardPos.push_back(std::make_tuple(qpoint[0], qpoint[1], qpoint[2]));
