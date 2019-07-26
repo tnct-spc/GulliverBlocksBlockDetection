@@ -14,11 +14,16 @@
 #include <cmath>
 #include <iostream>
 #include <math.h>
+#include <tuple>
+#include <limits>
+#include <iomanip>
 
 class Detection{
 private:
     int DetectNum;
     std::vector<std::vector<double>> data;
+    const float BoardEdgeLen = 0.38;
+    const float dispersion_thresh = 0.0001;
 
 public:
     std::vector<std::tuple<float, float, float>> BoardPos;
