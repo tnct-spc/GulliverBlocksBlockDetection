@@ -114,78 +114,101 @@ void Detection::detectBoard(){
 
         imshow("TestSquares", image);
     };
-
-    BoardPos.clear();
-    std::vector<std::vector<cv::Point> > squares;
-
-    rs2::colorizer color_map;
-    rs2::rates_printer printer;
-
+    auto Distance = [](std::tuple<float, float, float> a, std::tuple<float, float, float> b){
+            float x1,y1,z1,x2,y2,z2;
+            x1 = std::get<0>(a);
+            y1 = std::get<1>(a);
+            z1 = std::get<2>(a);
+            x2 = std::get<0>(b);
+            y2 = std::get<1>(b);
+            z2 = std::get<2>(b);
+            return std::sqrt(std::pow(x1-x2,2) + std::pow(y1-y2, 2) + std::pow(z1-z2, 2));
+    };
+    bool is_dispersion = true;
     do {
-        auto im = pipe.wait_for_frames().get_color_frame();
-        cv::Mat image = frame_to_mat(im);
+        BoardPos.clear();
+        std::vector<std::vector<cv::Point> > squares;
+
+        rs2::colorizer color_map;
+        rs2::rates_printer printer;
+
+        do {
+            auto im = pipe.wait_for_frames().get_color_frame();
+            cv::Mat image = frame_to_mat(im);
         
-        std::cout<<"capture"<<std::endl;
-        if( image.empty() ){
-            std::cerr << "Couldn't load " << std::endl;
-            std::abort();
+            std::cout<<"capture"<<std::endl;
+            if( image.empty() ){
+                std::cerr << "Couldn't load " << std::endl;
+                std::abort();
+            }
+
+            findSquares(image, squares);
+            drawSquares(image, squares);
+        
+            int c = cv::waitKey();
+        }while(squares.empty());
+
+    
+        std::vector<std::pair<int, int>> _frame_pos;
+        for(auto a : squares){
+            for(auto b : a)_frame_pos.push_back(std::make_pair(b.x, b.y));
         }
+        std::sort(_frame_pos.begin(), _frame_pos.end());
+        std::vector<std::pair<int, int>> frame_pos = { std::make_pair(0, 0), std::make_pair(0, 0), std::make_pair(0, 0), std::make_pair(0, 0)};
+        for(int i = 0;i < _frame_pos.size();i++){
+            if(i < _frame_pos.size()/4){
+                frame_pos.at(0).first += _frame_pos.at(i).first;
+                frame_pos.at(0).second += _frame_pos.at(i).second;
+            }else if (i < _frame_pos.size()/2){
+                frame_pos.at(1).first += _frame_pos.at(i).first;
+                frame_pos.at(1).second += _frame_pos.at(i).second;
 
-        findSquares(image, squares);
-    }while(squares.empty());
-   // drawSquares(image, squares);
+            }else if (i < _frame_pos.size()/4*3){
+                frame_pos.at(2).first += _frame_pos.at(i).first;
+                frame_pos.at(2).second += _frame_pos.at(i).second;
+
+            }else{
+                frame_pos.at(3).first += _frame_pos.at(i).first;
+                frame_pos.at(3).second += _frame_pos.at(i).second;
+
+            }
+        }
+        frame_pos.at(0).first /= _frame_pos.size()/4;
+        frame_pos.at(0).second /= _frame_pos.size()/4;
+        frame_pos.at(1).first /= _frame_pos.size()/4;
+        frame_pos.at(1).second /= _frame_pos.size()/4;
+        frame_pos.at(2).first /= _frame_pos.size()/4;
+        frame_pos.at(2).second /= _frame_pos.size()/4;
+        frame_pos.at(3).first /= _frame_pos.size()/4;
+        frame_pos.at(3).second /= _frame_pos.size()/4;
     
-   // int c = cv::waitKey();
-    
-    std::vector<std::pair<int, int>> _frame_pos;
-    for(auto a : squares){
-        for(auto b : a)_frame_pos.push_back(std::make_pair(b.x, b.y));
-    }
-    std::sort(_frame_pos.begin(), _frame_pos.end());
-    std::vector<std::pair<int, int>> frame_pos = { std::make_pair(0, 0), std::make_pair(0, 0), std::make_pair(0, 0), std::make_pair(0, 0)};
-    for(int i = 0;i < _frame_pos.size();i++){
-      if(i < _frame_pos.size()/4){
-        frame_pos.at(0).first += _frame_pos.at(i).first;
-        frame_pos.at(0).second += _frame_pos.at(i).second;
-      }else if (i < _frame_pos.size()/2){
-        frame_pos.at(1).first += _frame_pos.at(i).first;
-        frame_pos.at(1).second += _frame_pos.at(i).second;
+        std::cout<<"Board pos in piexl"<<std::endl;
+        for(int i = 0;i < 4;i++){
+            std::cout<<"("<<frame_pos.at(i).first<<" "<<frame_pos.at(i).second<<")";
+        }
+        std::cout<<std::endl;
 
-      }else if (i < _frame_pos.size()/4*3){
-        frame_pos.at(2).first += _frame_pos.at(i).first;
-        frame_pos.at(2).second += _frame_pos.at(i).second;
+        rs2::frameset pframes = pipe.wait_for_frames();
+        rs2::depth_frame depth = pframes.get_depth_frame();
 
-      }else{
-        frame_pos.at(3).first += _frame_pos.at(i).first;
-        frame_pos.at(3).second += _frame_pos.at(i).second;
-
-      }
-    }
-    frame_pos.at(0).first /= _frame_pos.size()/4;
-    frame_pos.at(0).second /= _frame_pos.size()/4;
-    frame_pos.at(1).first /= _frame_pos.size()/4;
-    frame_pos.at(1).second /= _frame_pos.size()/4;
-    frame_pos.at(2).first /= _frame_pos.size()/4;
-    frame_pos.at(2).second /= _frame_pos.size()/4;
-    frame_pos.at(3).first /= _frame_pos.size()/4;
-    frame_pos.at(3).second /= _frame_pos.size()/4;
-    
-    std::cout<<"Board pos in piexl"<<std::endl;
-    for(int i = 0;i < 4;i++){
-      std::cout<<"("<<frame_pos.at(i).first<<" "<<frame_pos.at(i).second<<")";
-    }
-    std::cout<<std::endl;
-
-    rs2::frameset pframes = pipe.wait_for_frames();
-    rs2::depth_frame depth = pframes.get_depth_frame();
-
-    rs2_intrinsics intr = pframes.get_profile().as<rs2::video_stream_profile>().get_intrinsics(); // Calibration data
+        rs2_intrinsics intr = pframes.get_profile().as<rs2::video_stream_profile>().get_intrinsics(); // Calibration data
 
 
-    for(int i = 0;i < 4;i++){
-        BoardPos.push_back(translatePixelToP3Doint((float)frame_pos.at(i).first, (float)frame_pos.at(i).second, intr, depth));
-        std::cout<<std::get<0>(BoardPos.back())<<" "<<std::get<1>(BoardPos.back())<<" "<<std::get<2>(BoardPos.back())<<std::endl;
-    }
+        for(int i = 0;i < 4;i++){
+            BoardPos.push_back(translatePixelToP3Doint((float)frame_pos.at(i).first, (float)frame_pos.at(i).second, intr, depth));
+            std::cout<<std::get<0>(BoardPos.back())<<" "<<std::get<1>(BoardPos.back())<<" "<<std::get<2>(BoardPos.back())<<std::endl;
+        }
+        int idx[] = {0, 1, 3, 2, 0};
+        float dispersion = 0;
+        for(int i = 0;i < 4;i++){
+            float d = Distance(BoardPos.at(idx[i]), BoardPos.at(idx[i+1]));
+            dispersion += pow(d-BoardEdgeLen,2);
+         //   std::cout<<d<<std::endl;
+        }
+        dispersion /= 4;
+        std::cout<<dispersion<<std::endl;
+        if(dispersion < dispersion_thresh)is_dispersion = false;
+    }while(is_dispersion);
 }
 
 std::tuple<float, float, float> Detection::translatePixelToP3Doint(float x, float y){
