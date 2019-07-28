@@ -8,7 +8,7 @@ void Manager::RunSingleDetection(){
     std::cout<<"Start detection"<<std::endl;
     Detection detection;
     std::cout<<"Finish constractor"<<std::endl;
-    /* 
+     
     while(1){
         std::pair<std::vector<std::tuple<int, int, int>>, std::vector<std::tuple<int,int,int>>> detect_info = detection.singleDetect();
         for(int i = 0;i < detect_info.first.size();i++){
@@ -21,6 +21,7 @@ void Manager::RunSingleDetection(){
         }
         std::cout<<std::endl;
         std::cout<<detect_info.second.size()<<": Deleted"<<std::endl;
+        usleep(5000000);
     }
-    */
+    
 }

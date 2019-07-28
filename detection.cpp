@@ -3,14 +3,56 @@
 Detection::Detection(){
     pipe.start();
     detectBoard();
+    current_data = std::vector<std::vector<float>>(BoardEdgeNum, std::vector<float>(BoardEdgeNum, 0));
 }
 
-std::vector<std::vector<double>> Detection::getDepth(){
+std::vector<std::tuple<float, float, float>> Detection::getDepth(){
+    rs2::frameset frames = pipe.wait_for_frames();
+    rs2::depth_frame depth = frames.get_depth_frame();
 
+    float width = depth.get_width();
+    float height = depth.get_height();
+    std::vector<std::tuple<float, float, float>> depth_data;
+    rs2_intrinsics intr = frames.get_profile().as<rs2::video_stream_profile>().get_intrinsics();
+  
+    for(float x = 1;x <= width;x++){
+        for(float y = 1;y <= height;y++){
+            depth_data.push_back(translatePlanePoint(translatePixelToP3Doint(x, y, intr, depth)));
+        }
+    }
+    return depth_data;
 }
 
 std::pair<std::vector<std::tuple<int, int, int>>, std::vector<std::tuple<int, int, int>>> Detection::singleDetect(){
+    std::vector<std::vector<std::pair<float, int>>> data = std::vector<std::vector<std::pair<float, int>>>(BoardEdgeNum, std::vector<std::pair<float, int>>(BoardEdgeNum, std::make_pair(0, 0)));
 
+    std::vector<std::tuple<float, float, float>> depth_data = getDepth();
+
+    std::vector<std::tuple<int, int, int>> add;
+    std::vector<std::tuple<int, int, int>> remove;
+
+    for(auto d : depth_data){
+        float x = std::get<0>(d);
+        float y = std::get<1>(d);
+        float z = std::get<2>(d);
+        if(0.0 < x && x < BoardEdgeLen && 0.0 < y && y < BoardEdgeLen){
+            data.at(x/BlockEdgeLen).at(y/BlockEdgeLen).first += z;
+            data.at(x/BlockEdgeLen).at(y/BlockEdgeLen).second++;
+        }
+    }
+    for(int i = 0;i < BoardEdgeNum;i++){
+        for(int j = 0;j < BoardEdgeNum;j++){
+            float z_diff = (data.at(i).at(j).first / data.at(i).at(j).second) - current_data.at(i).at(j);
+            z_diff /= 0.009;
+            if(z_diff > 0){
+                add.push_back(std::make_tuple(i, j, (data.at(i).at(j).first / data.at(i).at(j).second) / BlockHigh));
+            }else{
+                remove.push_back(std::make_tuple(i, j, current_data.at(i).at(j) / BlockHigh));
+            }
+            current_data.at(i).at(j) = (data.at(i).at(j).first / data.at(i).at(j).second);
+        }
+    }
+    return std::make_pair(add, remove);
 }
 
 void Detection::detectBoard(){
@@ -216,6 +258,7 @@ void Detection::detectBoard(){
         auto t = translatePlanePoint(BoardPosBasedData.at(i));
         BoardPos.push_back(std::make_pair(std::get<0>(t), std::get<1>(t)));
     }
+    std::sort(BoardPos.begin(), BoardPos.end());
 }
 
 std::tuple<float, float, float> Detection::translatePixelToP3Doint(float x, float y){
