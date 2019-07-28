@@ -36,8 +36,8 @@ std::pair<std::vector<std::tuple<int, int, int>>, std::vector<std::tuple<int, in
         float y = std::get<1>(d);
         float z = std::get<2>(d);
         if(0.0 < x && x < BoardEdgeLen && 0.0 < y && y < BoardEdgeLen){
-            data.at(x/BlockEdgeLen).at(y/BlockEdgeLen).first += z;
-            data.at(x/BlockEdgeLen).at(y/BlockEdgeLen).second++;
+            data.at(x / BlockEdgeLen).at(y / BlockEdgeLen).first += z;
+            data.at(x / BlockEdgeLen).at(y / BlockEdgeLen).second++;
         }
     }
     for(int i = 0;i < BoardEdgeNum;i++){
