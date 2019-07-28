@@ -43,10 +43,10 @@ std::pair<std::vector<std::tuple<int, int, int>>, std::vector<std::tuple<int, in
     for(int i = 0;i < BoardEdgeNum;i++){
         for(int j = 0;j < BoardEdgeNum;j++){
             float z_diff = (data.at(i).at(j).first / data.at(i).at(j).second) - current_data.at(i).at(j);
-            z_diff /= 0.009;
-            if(z_diff > 0){
+            z_diff /= BlockHigh;
+            if(z_diff >= 1){
                 add.push_back(std::make_tuple(i, j, (data.at(i).at(j).first / data.at(i).at(j).second) / BlockHigh));
-            }else{
+            }else if(z_diff <= -1){
                 remove.push_back(std::make_tuple(i, j, current_data.at(i).at(j) / BlockHigh));
             }
             current_data.at(i).at(j) = (data.at(i).at(j).first / data.at(i).at(j).second);
