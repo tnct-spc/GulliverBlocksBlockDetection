@@ -10,6 +10,7 @@ std::vector<std::vector<double>> Detection::getDepth(){
 }
 
 std::pair<std::vector<std::tuple<int, int, int>>, std::vector<std::tuple<int, int, int>>> Detection::singleDetect(){
+
 }
 
 void Detection::detectBoard(){
@@ -42,8 +43,8 @@ void Detection::detectBoard(){
         {
             int ch[] = {c, 0};
             cv::mixChannels(&timg, 1, &gray0, 1, ch, 1);
-            
-            // try several threshold levels
+
+
             for( int l = 0; l < N; l++ )
             {
                 Canny(gray0, gray, 0, thresh, 5);
@@ -126,7 +127,7 @@ void Detection::detectBoard(){
     };
     bool is_dispersion = true;
     do {
-        BoardPos.clear();
+        BoardPosBasedData.clear();
         std::vector<std::vector<cv::Point> > squares;
 
         rs2::colorizer color_map;
@@ -195,13 +196,13 @@ void Detection::detectBoard(){
 
 
         for(int i = 0;i < 4;i++){
-            BoardPos.push_back(translatePixelToP3Doint((float)frame_pos.at(i).first, (float)frame_pos.at(i).second, intr, depth));
-            std::cout<<std::get<0>(BoardPos.back())<<" "<<std::get<1>(BoardPos.back())<<" "<<std::get<2>(BoardPos.back())<<std::endl;
+            BoardPosBasedData.push_back(translatePixelToP3Doint((float)frame_pos.at(i).first, (float)frame_pos.at(i).second, intr, depth));
+            std::cout<<std::get<0>(BoardPosBasedData.back())<<" "<<std::get<1>(BoardPosBasedData.back())<<" "<<std::get<2>(BoardPosBasedData.back())<<std::endl;
         }
         int idx[] = {0, 1, 3, 2, 0};
         float dispersion = 0;
         for(int i = 0;i < 4;i++){
-            float d = Distance(BoardPos.at(idx[i]), BoardPos.at(idx[i+1]));
+            float d = Distance(BoardPosBasedData.at(idx[i]), BoardPosBasedData.at(idx[i+1]));
             dispersion += pow(d-BoardEdgeLen,2);
          //   std::cout<<d<<std::endl;
         }
@@ -209,6 +210,12 @@ void Detection::detectBoard(){
         std::cout<<dispersion<<std::endl;
         if(dispersion < dispersion_thresh)is_dispersion = false;
     }while(is_dispersion);
+    BoardPos.clear();
+
+    for(int i = 0;i < 4;i++){
+        auto t = translatePlanePoint(BoardPosBasedData.at(i));
+        BoardPos.push_back(std::make_pair(std::get<0>(t), std::get<1>(t)));
+    }
 }
 
 std::tuple<float, float, float> Detection::translatePixelToP3Doint(float x, float y){
@@ -228,4 +235,54 @@ std::tuple<float, float, float> Detection::translatePixelToP3Doint(float x, floa
     rs2_deproject_pixel_to_point(qpoint, &intr, pixel, depth.get_distance(pixel[0], pixel[1]));
     
     return std::make_tuple(qpoint[0], qpoint[1], qpoint[2]);
+}
+
+std::tuple<float, float, float> Detection::translatePlanePoint(float x, float y, float z){
+    auto inner_product = [](std::tuple<float, float, float> a, std::tuple<float, float, float> b){
+        return std::get<0>(a) * std::get<0>(b) + std::get<1>(a) * std::get<1>(b) + std::get<2>(a) * std::get<2>(b);
+    };
+    auto outer_product = [](std::tuple<float, float, float> a, std::tuple<float, float, float> b){
+        return std::make_tuple(std::get<1>(a) * std::get<2>(b) - std::get<2>(a) * std::get<1>(b), std::get<2>(a) * std::get<0>(b) - std::get<0>(a) * std::get<2>(b), std::get<0>(a) * std::get<1>(b) - std::get<1>(a) * std::get<0>(b));
+    };
+    auto vector_distance = [](std::tuple<float, float, float> a){
+        return std::sqrt(std::pow(std::get<0>(a), 2) + std::pow(std::get<1>(a), 2) + std::pow(std::get<2>(a), 2));
+    };
+
+    x -= std::get<0>(BoardPosBasedData.at(0));
+    y -= std::get<1>(BoardPosBasedData.at(0));
+    z -= std::get<2>(BoardPosBasedData.at(0));
+    float x1 = std::get<0>(BoardPosBasedData.at(1)) - std::get<0>(BoardPosBasedData.at(0));
+    float y1 = std::get<1>(BoardPosBasedData.at(1)) - std::get<1>(BoardPosBasedData.at(0));
+    float z1 = std::get<2>(BoardPosBasedData.at(1)) - std::get<2>(BoardPosBasedData.at(0));
+    float x2 = std::get<0>(BoardPosBasedData.at(2)) - std::get<0>(BoardPosBasedData.at(0));
+    float y2 = std::get<1>(BoardPosBasedData.at(2)) - std::get<1>(BoardPosBasedData.at(0));
+    float z2 = std::get<2>(BoardPosBasedData.at(2)) - std::get<2>(BoardPosBasedData.at(0));
+    return std::make_tuple(inner_product(std::make_tuple(x, y, z), std::make_tuple(x2, y2, z2)) / vector_distance(std::make_tuple(x2, y2, z2)), inner_product(std::make_tuple(x, y, z), std::make_tuple(x1, y1, z1)) / vector_distance(std::make_tuple(x1, y1, z1)), inner_product(outer_product(std::make_tuple(x2, y2, z2), std::make_tuple(x1, y1, z1)), std::make_tuple(x, y, z)) / vector_distance(std::make_tuple(x1, y1, z1)) / vector_distance(std::make_tuple(x2, y2, z2)));
+}
+
+std::tuple<float, float, float> Detection::translatePlanePoint(std::tuple<float, float, float> V){
+    float x = std::get<0>(V);
+    float y = std::get<1>(V);
+    float z = std::get<2>(V);
+
+    auto inner_product = [](std::tuple<float, float, float> a, std::tuple<float, float, float> b){
+        return std::get<0>(a) * std::get<0>(b) + std::get<1>(a) * std::get<1>(b) + std::get<2>(a) * std::get<2>(b);
+    };
+    auto outer_product = [](std::tuple<float, float, float> a, std::tuple<float, float, float> b){
+        return std::make_tuple(std::get<1>(a) * std::get<2>(b) - std::get<2>(a) * std::get<1>(b), std::get<2>(a) * std::get<0>(b) - std::get<0>(a) * std::get<2>(b), std::get<0>(a) * std::get<1>(b) - std::get<1>(a) * std::get<0>(b));
+    };
+    auto vector_distance = [](std::tuple<float, float, float> a){
+        return std::sqrt(std::pow(std::get<0>(a), 2) + std::pow(std::get<1>(a), 2) + std::pow(std::get<2>(a), 2));
+    };
+
+    x -= std::get<0>(BoardPosBasedData.at(0));
+    y -= std::get<1>(BoardPosBasedData.at(0));
+    z -= std::get<2>(BoardPosBasedData.at(0));
+    float x1 = std::get<0>(BoardPosBasedData.at(1)) - std::get<0>(BoardPosBasedData.at(0));
+    float y1 = std::get<1>(BoardPosBasedData.at(1)) - std::get<1>(BoardPosBasedData.at(0));
+    float z1 = std::get<2>(BoardPosBasedData.at(1)) - std::get<2>(BoardPosBasedData.at(0));
+    float x2 = std::get<0>(BoardPosBasedData.at(2)) - std::get<0>(BoardPosBasedData.at(0));
+    float y2 = std::get<1>(BoardPosBasedData.at(2)) - std::get<1>(BoardPosBasedData.at(0));
+    float z2 = std::get<2>(BoardPosBasedData.at(2)) - std::get<2>(BoardPosBasedData.at(0));
+    return std::make_tuple(inner_product(std::make_tuple(x, y, z), std::make_tuple(x2, y2, z2)) / vector_distance(std::make_tuple(x2, y2, z2)), inner_product(std::make_tuple(x, y, z), std::make_tuple(x1, y1, z1)) / vector_distance(std::make_tuple(x1, y1, z1)), inner_product(outer_product(std::make_tuple(x2, y2, z2), std::make_tuple(x1, y1, z1)), std::make_tuple(x, y, z)) / vector_distance(std::make_tuple(x1, y1, z1)) / vector_distance(std::make_tuple(x2, y2, z2)));
 }

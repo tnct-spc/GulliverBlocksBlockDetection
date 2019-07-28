@@ -5,7 +5,7 @@
 #include "opencv2/imgproc.hpp"
 #include "opencv2/imgcodecs.hpp"
 
-#include <opencv2/opencv.hpp>   // Include OpenCV API
+#include <opencv2/opencv.hpp>
 #include <exception>
 
 
@@ -20,13 +20,14 @@
 
 class Detection{
 private:
-    int DetectNum;
     std::vector<std::vector<double>> data;
-    const float BoardEdgeLen = 0.38;
+    const float BoardEdgeLen = 0.38; //Board Edge Length
     const float dispersion_thresh = 0.0001;
 
 public:
-    std::vector<std::tuple<float, float, float>> BoardPos;
+    std::vector<std::tuple<float, float, float>> BoardPosBasedData;
+    std::vector<std::pair<float, float>> BoardPos;
+    rs2::pipeline pipe;
 
     Detection();
     std::pair<std::vector<std::tuple<int, int, int>>, std::vector<std::tuple<int, int, int>>>  singleDetect(); //Widrh, Height, Depth
@@ -35,5 +36,6 @@ public:
     std::tuple<float, float, float> translatePixelToP3Doint(float x, float y);
     std::tuple<float, float, float> translatePixelToP3Doint(float x, float y, rs2_intrinsics intr, rs2::depth_frame depth);
 
-    rs2::pipeline pipe;
+    std::tuple<float, float, float> translatePlanePoint(float x, float y, float z);
+    std::tuple<float, float, float> translatePlanePoint(std::tuple<float, float, float> point_pos);
 };
