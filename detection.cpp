@@ -56,18 +56,26 @@ std::pair<std::vector<std::tuple<int, int, int>>, std::vector<std::tuple<int, in
             data.at(x / BlockEdgeLen).at(y / BlockEdgeLen).second++;
         }
     }
+    
+   // std::cout<< std::setprecision(3);
+    std::vector<float> q;
     for(int i = 0;i < BoardEdgeNum;i++){
         for(int j = 0;j < BoardEdgeNum;j++){
             float z_diff = (data.at(i).at(j).first / data.at(i).at(j).second) - current_data.at(i).at(j);
             z_diff /= BlockHigh;
+            q.push_back(z_diff);
             if(z_diff >= BlockHighthresh){
-                add.push_back(std::make_tuple(i, j, (data.at(i).at(j).first / data.at(i).at(j).second) / BlockHigh));
+                remove.push_back(std::make_tuple(i, j, (data.at(i).at(j).first / data.at(i).at(j).second) / BlockHigh));
             }else if(z_diff <= -BlockHighthresh){
-                remove.push_back(std::make_tuple(i, j, current_data.at(i).at(j) / BlockHigh));
+                add.push_back(std::make_tuple(i, j, current_data.at(i).at(j) / BlockHigh));
             }
             current_data.at(i).at(j) = (data.at(i).at(j).first / data.at(i).at(j).second);
+     //       std::cout<<current_data.at(i).at(j)<<" ";
         }
+       // std::cout<<std::endl;
     }
+   // std::cout<< std::setprecision(10);
+    
     return std::make_pair(add, remove);
 }
 
@@ -172,6 +180,7 @@ void Detection::detectBoard(){
         }
 
         imshow("TestSquares", image);
+        int c = cv::waitKey();
     };
     auto Distance = [](std::tuple<float, float, float> a, std::tuple<float, float, float> b){
             float x1,y1,z1,x2,y2,z2;
@@ -203,8 +212,6 @@ void Detection::detectBoard(){
 
             findSquares(image, squares);
             drawSquares(image, squares);
-        
-            int c = cv::waitKey();
         }while(squares.empty());
 
     
@@ -252,17 +259,20 @@ void Detection::detectBoard(){
 
         rs2_intrinsics intr = pframes.get_profile().as<rs2::video_stream_profile>().get_intrinsics(); // Calibration data
 
+        std::vector<std::pair<float, int>> dispiression_data;
 
         for(int i = 0;i < 4;i++){
             BoardPosBasedData.push_back(translatePixelToP3DPoint((float)frame_pos.at(i).first, (float)frame_pos.at(i).second, intr, depth));
+            dispiression_data.push_back(std::make_pair(std::get<0>(BoardPosBasedData.back()) + std::get<1>(BoardPosBasedData.back()), i));
             std::cout<<std::get<0>(BoardPosBasedData.back())<<" "<<std::get<1>(BoardPosBasedData.back())<<" "<<std::get<2>(BoardPosBasedData.back())<<std::endl;
         }
+        std::sort(dispiression_data.begin(), dispiression_data.end());
         int idx[] = {0, 1, 3, 2, 0};
         float dispersion = 0;
         for(int i = 0;i < 4;i++){
-            float d = Distance(BoardPosBasedData.at(idx[i]), BoardPosBasedData.at(idx[i+1]));
+            float d = Distance(BoardPosBasedData.at(dispiression_data.at(idx[i]).second), BoardPosBasedData.at(dispiression_data.at(idx[i+1]).second));
             dispersion += pow(d-BoardEdgeLen,2);
-         //   std::cout<<d<<std::endl;
+            std::cout<<d<<std::endl;
         }
         dispersion /= 4;
         std::cout<<dispersion<<std::endl;
@@ -331,7 +341,7 @@ std::tuple<float, float, float> Detection::translatePlanePoint(std::tuple<float,
         return std::make_tuple(std::get<1>(a) * std::get<2>(b) - std::get<2>(a) * std::get<1>(b), std::get<2>(a) * std::get<0>(b) - std::get<0>(a) * std::get<2>(b), std::get<0>(a) * std::get<1>(b) - std::get<1>(a) * std::get<0>(b));
     };
     auto vector_distance = [](std::tuple<float, float, float> a){
-        return std::sqrt(std::pow(std::get<0>(a), 2) + std::pow(std::get<1>(a), 2) + std::pow(std::get<2>(a), 2))+(1e-5);
+        return std::sqrt(std::pow(std::get<0>(a), 2) + std::pow(std::get<1>(a), 2) + std::pow(std::get<2>(a), 2));
     };
 
     x -= std::get<0>(BoardPosBasedData.at(0));
