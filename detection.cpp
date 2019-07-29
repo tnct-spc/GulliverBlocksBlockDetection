@@ -4,6 +4,23 @@ Detection::Detection(){
     pipe.start();
     detectBoard();
     current_data = std::vector<std::vector<float>>(BoardEdgeNum, std::vector<float>(BoardEdgeNum, 0));
+    std::vector<std::tuple<float, float, float>> depth_data = getDepth();
+    std::vector<std::vector<std::pair<float, int>>> data = std::vector<std::vector<std::pair<float, int>>>(BoardEdgeNum, std::vector<std::pair<float, int>>(BoardEdgeNum, std::make_pair(0, 0)));
+
+    for(auto d : depth_data){
+        float x = std::get<0>(d);
+        float y = std::get<1>(d);
+        float z = std::get<2>(d);
+        if(0.0 < x && x < BoardEdgeLen && 0.0 < y && y < BoardEdgeLen){
+            data.at(x / BlockEdgeLen).at(y / BlockEdgeLen).first += z;
+            data.at(x / BlockEdgeLen).at(y / BlockEdgeLen).second++;
+        }
+    }
+    for(int i = 0;i < BoardEdgeNum;i++){
+        for(int j = 0;j < BoardEdgeNum;j++){
+            current_data.at(i).at(j) = (data.at(i).at(j).first / data.at(i).at(j).second);
+        }
+    }
 }
 
 std::vector<std::tuple<float, float, float>> Detection::getDepth(){
@@ -15,9 +32,9 @@ std::vector<std::tuple<float, float, float>> Detection::getDepth(){
     std::vector<std::tuple<float, float, float>> depth_data;
     rs2_intrinsics intr = frames.get_profile().as<rs2::video_stream_profile>().get_intrinsics();
   
-    for(float x = 1;x <= width;x++){
-        for(float y = 1;y <= height;y++){
-            depth_data.push_back(translatePlanePoint(translatePixelToP3Doint(x, y, intr, depth)));
+    for(float x = 1;x < width;x++){
+        for(float y = 1;y < height;y++){
+            depth_data.push_back(translatePlanePoint(translatePixelToP3DPoint(x, y, intr, depth)));
         }
     }
     return depth_data;
@@ -27,7 +44,6 @@ std::pair<std::vector<std::tuple<int, int, int>>, std::vector<std::tuple<int, in
     std::vector<std::vector<std::pair<float, int>>> data = std::vector<std::vector<std::pair<float, int>>>(BoardEdgeNum, std::vector<std::pair<float, int>>(BoardEdgeNum, std::make_pair(0, 0)));
 
     std::vector<std::tuple<float, float, float>> depth_data = getDepth();
-
     std::vector<std::tuple<int, int, int>> add;
     std::vector<std::tuple<int, int, int>> remove;
 
@@ -44,9 +60,9 @@ std::pair<std::vector<std::tuple<int, int, int>>, std::vector<std::tuple<int, in
         for(int j = 0;j < BoardEdgeNum;j++){
             float z_diff = (data.at(i).at(j).first / data.at(i).at(j).second) - current_data.at(i).at(j);
             z_diff /= BlockHigh;
-            if(z_diff >= 1){
+            if(z_diff >= BlockHighthresh){
                 add.push_back(std::make_tuple(i, j, (data.at(i).at(j).first / data.at(i).at(j).second) / BlockHigh));
-            }else if(z_diff <= -1){
+            }else if(z_diff <= -BlockHighthresh){
                 remove.push_back(std::make_tuple(i, j, current_data.at(i).at(j) / BlockHigh));
             }
             current_data.at(i).at(j) = (data.at(i).at(j).first / data.at(i).at(j).second);
@@ -238,7 +254,7 @@ void Detection::detectBoard(){
 
 
         for(int i = 0;i < 4;i++){
-            BoardPosBasedData.push_back(translatePixelToP3Doint((float)frame_pos.at(i).first, (float)frame_pos.at(i).second, intr, depth));
+            BoardPosBasedData.push_back(translatePixelToP3DPoint((float)frame_pos.at(i).first, (float)frame_pos.at(i).second, intr, depth));
             std::cout<<std::get<0>(BoardPosBasedData.back())<<" "<<std::get<1>(BoardPosBasedData.back())<<" "<<std::get<2>(BoardPosBasedData.back())<<std::endl;
         }
         int idx[] = {0, 1, 3, 2, 0};
@@ -261,7 +277,7 @@ void Detection::detectBoard(){
     std::sort(BoardPos.begin(), BoardPos.end());
 }
 
-std::tuple<float, float, float> Detection::translatePixelToP3Doint(float x, float y){
+std::tuple<float, float, float> Detection::translatePixelToP3DPoint(float x, float y){
     rs2::frameset pframes = pipe.wait_for_frames();
     rs2_intrinsics intr = pframes.get_profile().as<rs2::video_stream_profile>().get_intrinsics(); // Calibration data
     float pixel[2] = {x, y};
@@ -272,7 +288,7 @@ std::tuple<float, float, float> Detection::translatePixelToP3Doint(float x, floa
     return std::make_tuple(qpoint[0], qpoint[1], qpoint[2]);
 }
 
-std::tuple<float, float, float> Detection::translatePixelToP3Doint(float x, float y, rs2_intrinsics intr, rs2::depth_frame depth){
+std::tuple<float, float, float> Detection::translatePixelToP3DPoint(float x, float y, rs2_intrinsics intr, rs2::depth_frame depth){
     float pixel[2] = {x, y};
     float qpoint[3];
     rs2_deproject_pixel_to_point(qpoint, &intr, pixel, depth.get_distance(pixel[0], pixel[1]));
@@ -315,7 +331,7 @@ std::tuple<float, float, float> Detection::translatePlanePoint(std::tuple<float,
         return std::make_tuple(std::get<1>(a) * std::get<2>(b) - std::get<2>(a) * std::get<1>(b), std::get<2>(a) * std::get<0>(b) - std::get<0>(a) * std::get<2>(b), std::get<0>(a) * std::get<1>(b) - std::get<1>(a) * std::get<0>(b));
     };
     auto vector_distance = [](std::tuple<float, float, float> a){
-        return std::sqrt(std::pow(std::get<0>(a), 2) + std::pow(std::get<1>(a), 2) + std::pow(std::get<2>(a), 2));
+        return std::sqrt(std::pow(std::get<0>(a), 2) + std::pow(std::get<1>(a), 2) + std::pow(std::get<2>(a), 2))+(1e-5);
     };
 
     x -= std::get<0>(BoardPosBasedData.at(0));

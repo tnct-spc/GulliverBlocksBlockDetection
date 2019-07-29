@@ -22,10 +22,11 @@ class Detection{
 private:
     std::vector<std::vector<double>> data;
     const float BoardEdgeLen = 0.38; //Board Edge Length
-    const float BlockEdgeLen = 0.38/17;
+    const float BlockEdgeLen = 0.38/17.0;
     const float dispersion_thresh = 0.0001;
     const int BoardEdgeNum = 17;
     const float BlockHigh = 0.009;
+    const float BlockHighthresh = 0.9;
 
 public:
     std::vector<std::tuple<float, float, float>> BoardPosBasedData;
@@ -37,8 +38,8 @@ public:
     std::pair<std::vector<std::tuple<int, int, int>>, std::vector<std::tuple<int, int, int>>>  singleDetect(); //Widrh, Height, Depth
     std::vector<std::tuple<float, float, float>> getDepth();
     void detectBoard();
-    std::tuple<float, float, float> translatePixelToP3Doint(float x, float y);
-    std::tuple<float, float, float> translatePixelToP3Doint(float x, float y, rs2_intrinsics intr, rs2::depth_frame depth);
+    std::tuple<float, float, float> translatePixelToP3DPoint(float x, float y);
+    std::tuple<float, float, float> translatePixelToP3DPoint(float x, float y, rs2_intrinsics intr, rs2::depth_frame depth);
 
     std::tuple<float, float, float> translatePlanePoint(float x, float y, float z);
     std::tuple<float, float, float> translatePlanePoint(std::tuple<float, float, float> point_pos);
