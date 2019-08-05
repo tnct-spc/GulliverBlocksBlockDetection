@@ -31,9 +31,9 @@ std::vector<std::tuple<float, float, float>> Detection::getDepth(){
     float height = depth.get_height();
     std::vector<std::tuple<float, float, float>> depth_data;
     rs2_intrinsics intr = frames.get_profile().as<rs2::video_stream_profile>().get_intrinsics();
-  
-    for(float x = 1;x < width;x++){
-        for(float y = 1;y < height;y++){
+
+    for(float x = 1;x <= width;x++){
+        for(float y = 1;y <= height;y++){
             depth_data.push_back(translatePlanePoint(translatePixelToP3DPoint(x, y, intr, depth)));
         }
     }
@@ -190,7 +190,7 @@ void Detection::detectBoard(){
             x2 = std::get<0>(b);
             y2 = std::get<1>(b);
             z2 = std::get<2>(b);
-            return std::sqrt(std::pow(x1-x2,2) + std::pow(y1-y2, 2) + std::pow(z1-z2, 2));
+            return std::sqrt(std::pow(x1-x2, 2) + std::pow(y1-y2, 2) + std::pow(z1-z2, 2));
     };
     bool is_dispersion = true;
     do {
@@ -203,6 +203,7 @@ void Detection::detectBoard(){
         do {
             auto im = pipe.wait_for_frames().get_color_frame();
             cv::Mat image = frame_to_mat(im);
+            std::cout<<image.rows<<" "<<image.cols<<std::endl;
         
             std::cout<<"capture"<<std::endl;
             if( image.empty() ){
@@ -257,20 +258,19 @@ void Detection::detectBoard(){
         rs2::frameset pframes = pipe.wait_for_frames();
         rs2::depth_frame depth = pframes.get_depth_frame();
 
+        std::cout<<depth.get_width()<<" "<<depth.get_height()<<std::endl;
+
         rs2_intrinsics intr = pframes.get_profile().as<rs2::video_stream_profile>().get_intrinsics(); // Calibration data
 
-        std::vector<std::pair<float, int>> dispiression_data;
 
         for(int i = 0;i < 4;i++){
             BoardPosBasedData.push_back(translatePixelToP3DPoint((float)frame_pos.at(i).first, (float)frame_pos.at(i).second, intr, depth));
-            dispiression_data.push_back(std::make_pair(std::get<0>(BoardPosBasedData.back()) + std::get<1>(BoardPosBasedData.back()), i));
             std::cout<<std::get<0>(BoardPosBasedData.back())<<" "<<std::get<1>(BoardPosBasedData.back())<<" "<<std::get<2>(BoardPosBasedData.back())<<std::endl;
         }
-        std::sort(dispiression_data.begin(), dispiression_data.end());
         int idx[] = {0, 1, 3, 2, 0};
         float dispersion = 0;
         for(int i = 0;i < 4;i++){
-            float d = Distance(BoardPosBasedData.at(dispiression_data.at(idx[i]).second), BoardPosBasedData.at(dispiression_data.at(idx[i+1]).second));
+            float d = Distance(BoardPosBasedData.at(idx[i]), BoardPosBasedData.at(idx[i+1]));
             dispersion += pow(d-BoardEdgeLen,2);
             std::cout<<d<<std::endl;
         }
@@ -298,7 +298,7 @@ std::tuple<float, float, float> Detection::translatePixelToP3DPoint(float x, flo
     return std::make_tuple(qpoint[0], qpoint[1], qpoint[2]);
 }
 
-std::tuple<float, float, float> Detection::translatePixelToP3DPoint(float x, float y, rs2_intrinsics intr, rs2::depth_frame depth){
+std::tuple<float, float, float> Detection::translatePixelToP3DPoint(float x, float y, rs2_intrinsics& intr, rs2::depth_frame& depth){
     float pixel[2] = {x, y};
     float qpoint[3];
     rs2_deproject_pixel_to_point(qpoint, &intr, pixel, depth.get_distance(pixel[0], pixel[1]));

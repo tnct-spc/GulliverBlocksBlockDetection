@@ -39,7 +39,7 @@ public:
     std::vector<std::tuple<float, float, float>> getDepth();
     void detectBoard();
     std::tuple<float, float, float> translatePixelToP3DPoint(float x, float y);
-    std::tuple<float, float, float> translatePixelToP3DPoint(float x, float y, rs2_intrinsics intr, rs2::depth_frame depth);
+    std::tuple<float, float, float> translatePixelToP3DPoint(float x, float y, rs2_intrinsics& intr, rs2::depth_frame& depth);
 
     std::tuple<float, float, float> translatePlanePoint(float x, float y, float z);
     std::tuple<float, float, float> translatePlanePoint(std::tuple<float, float, float> point_pos);
