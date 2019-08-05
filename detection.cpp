@@ -1,7 +1,9 @@
 #include "detection.h"
 
 Detection::Detection(){
-    pipe.start();
+    cfg.enable_stream(RS2_STREAM_COLOR, 1280, 720, RS2_FORMAT_RGB8, 6);
+    cfg.enable_stream(RS2_STREAM_DEPTH, 1280, 720, RS2_FORMAT_Z16, 6);
+    pipe.start(cfg);
     detectBoard();
     current_data = std::vector<std::vector<float>>(BoardEdgeNum, std::vector<float>(BoardEdgeNum, 0));
     std::vector<std::tuple<float, float, float>> depth_data = getDepth();

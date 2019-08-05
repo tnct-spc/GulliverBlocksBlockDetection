@@ -33,6 +33,7 @@ public:
     std::vector<std::pair<float, float>> BoardPos;
     std::vector<std::vector<float>> current_data;
     rs2::pipeline pipe;
+    rs2::config cfg;
 
     Detection();
     std::pair<std::vector<std::tuple<int, int, int>>, std::vector<std::tuple<int, int, int>>>  singleDetect(); //Widrh, Height, Depth
