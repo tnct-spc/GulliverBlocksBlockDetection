@@ -1,8 +1,8 @@
 #include "detection.h"
 
 Detection::Detection(){
-    cfg.enable_stream(RS2_STREAM_COLOR, 1280, 720, RS2_FORMAT_RGB8, 6);
-    cfg.enable_stream(RS2_STREAM_DEPTH, 1280, 720, RS2_FORMAT_Z16, 6);
+    cfg.enable_stream(RS2_STREAM_COLOR, 1280, 720, RS2_FORMAT_RGB8, 30);
+    cfg.enable_stream(RS2_STREAM_DEPTH, 1280, 720, RS2_FORMAT_Z16, 30);
     pipe.start(cfg);
     detectBoard();
     current_data = std::vector<std::vector<float>>(BoardEdgeNum, std::vector<float>(BoardEdgeNum, 0));
@@ -28,17 +28,18 @@ Detection::Detection(){
 std::vector<std::tuple<float, float, float>> Detection::getDepth(){
     rs2::frameset frames = pipe.wait_for_frames();
     rs2::depth_frame depth = frames.get_depth_frame();
+    rs2_intrinsics intr = frames.get_profile().as<rs2::video_stream_profile>().get_intrinsics();
 
     float width = depth.get_width();
     float height = depth.get_height();
     std::vector<std::tuple<float, float, float>> depth_data;
-    rs2_intrinsics intr = frames.get_profile().as<rs2::video_stream_profile>().get_intrinsics();
 
-    for(float x = 1;x <= width;x++){
-        for(float y = 1;y <= height;y++){
+    for(float x = 1;x < width;x++){
+        for(float y = 1;y < height;y++){
             depth_data.push_back(translatePlanePoint(translatePixelToP3DPoint(x, y, intr, depth)));
         }
     }
+    
     return depth_data;
 }
 
@@ -58,8 +59,8 @@ std::pair<std::vector<std::tuple<int, int, int>>, std::vector<std::tuple<int, in
             data.at(x / BlockEdgeLen).at(y / BlockEdgeLen).second++;
         }
     }
-    
-   // std::cout<< std::setprecision(3);
+    cv::Mat M(960, 960, CV_8UC3, cv::Scalar(0,0,255));
+    //std::cout<< std::setprecision(3);
     std::vector<float> q;
     for(int i = 0;i < BoardEdgeNum;i++){
         for(int j = 0;j < BoardEdgeNum;j++){
@@ -67,17 +68,27 @@ std::pair<std::vector<std::tuple<int, int, int>>, std::vector<std::tuple<int, in
             z_diff /= BlockHigh;
             q.push_back(z_diff);
             if(z_diff >= BlockHighthresh){
+                //std::cout<<z_diff<<std::endl;
                 remove.push_back(std::make_tuple(i, j, (data.at(i).at(j).first / data.at(i).at(j).second) / BlockHigh));
             }else if(z_diff <= -BlockHighthresh){
+                //std::cout<<z_diff<<std::endl;
                 add.push_back(std::make_tuple(i, j, current_data.at(i).at(j) / BlockHigh));
             }
             current_data.at(i).at(j) = (data.at(i).at(j).first / data.at(i).at(j).second);
-     //       std::cout<<current_data.at(i).at(j)<<" ";
+            //std::cout<<current_data.at(i).at(j)<<" ";
+            for(int p = i*20 ; p < 20 ; p++){
+                cv::Vec3b* ptr = M.ptr<cv::Vec3b>( p );
+                for(int q = j*20 ; q < 20 ; q++){
+                    ptr[q] = cv::Vec3b(current_data.at(i).at(j)*10000, current_data.at(i).at(j)*10000, current_data.at(i).at(j)*10000);
+                }
+            }
         }
-       // std::cout<<std::endl;
+        //std::cout<<std::endl;
     }
-   // std::cout<< std::setprecision(10);
-    
+    //std::cout<< std::setprecision(10);
+    //std::cout<<current_data.at(0).at(0)<<std::endl;
+    cv::imshow("Visualizer", M);
+    int c = cv::waitKey();
     return std::make_pair(add, remove);
 }
 
@@ -239,7 +250,6 @@ void Detection::detectBoard(){
             }else{
                 frame_pos.at(3).first += _frame_pos.at(i).first;
                 frame_pos.at(3).second += _frame_pos.at(i).second;
-
             }
         }
         frame_pos.at(0).first /= _frame_pos.size()/4;
@@ -251,11 +261,11 @@ void Detection::detectBoard(){
         frame_pos.at(3).first /= _frame_pos.size()/4;
         frame_pos.at(3).second /= _frame_pos.size()/4;
     
-        std::cout<<"Board pos in piexl"<<std::endl;
-        for(int i = 0;i < 4;i++){
-            std::cout<<"("<<frame_pos.at(i).first<<" "<<frame_pos.at(i).second<<")";
-        }
-        std::cout<<std::endl;
+  //      std::cout<<"Board pos in piexl"<<std::endl;
+  //      for(int i = 0;i < 4;i++){
+    //        std::cout<<"("<<frame_pos.at(i).first<<" "<<frame_pos.at(i).second<<")";
+    //    }
+    //    std::cout<<std::endl;
 
         rs2::frameset pframes = pipe.wait_for_frames();
         rs2::depth_frame depth = pframes.get_depth_frame();
@@ -267,9 +277,9 @@ void Detection::detectBoard(){
 
         for(int i = 0;i < 4;i++){
             BoardPosBasedData.push_back(translatePixelToP3DPoint((float)frame_pos.at(i).first, (float)frame_pos.at(i).second, intr, depth));
-            std::cout<<std::get<0>(BoardPosBasedData.back())<<" "<<std::get<1>(BoardPosBasedData.back())<<" "<<std::get<2>(BoardPosBasedData.back())<<std::endl;
+            //std::cout<<std::get<0>(BoardPosBasedData.back())<<" "<<std::get<1>(BoardPosBasedData.back())<<" "<<std::get<2>(BoardPosBasedData.back())<<std::endl;
         }
-        int idx[] = {0, 1, 3, 2, 0};
+        int idx[] = {0, 1, 2, 3, 0};
         float dispersion = 0;
         for(int i = 0;i < 4;i++){
             float d = Distance(BoardPosBasedData.at(idx[i]), BoardPosBasedData.at(idx[i+1]));
