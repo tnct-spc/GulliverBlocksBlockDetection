@@ -26,17 +26,20 @@ Detection::Detection(){
 }
 
 std::vector<std::tuple<float, float, float>> Detection::getDepth(){
-    rs2::frameset frames = pipe.wait_for_frames();
-    rs2::depth_frame depth = frames.get_depth_frame();
-    rs2_intrinsics intr = frames.get_profile().as<rs2::video_stream_profile>().get_intrinsics();
 
-    float width = depth.get_width();
-    float height = depth.get_height();
+
+    float width = 1280;
+    float height = 720;
     std::vector<std::tuple<float, float, float>> depth_data;
-
-    for(float x = 1;x < width;x++){
-        for(float y = 1;y < height;y++){
-            depth_data.push_back(translatePlanePoint(translatePixelToP3DPoint(x, y, intr, depth)));
+    for(int i = 0;i < 2;i++){
+        rs2::frameset frames = pipe.wait_for_frames();
+        rs2::depth_frame depth = frames.get_depth_frame();
+        rs2_intrinsics intr = frames.get_profile().as<rs2::video_stream_profile>().get_intrinsics();
+        for(float x = 1;x < width;x++){
+            for(float y = 1;y < height;y++){
+                depth_data.push_back(translatePlanePoint(translatePixelToP3DPoint(x, y, intr, depth)));
+                if(abs(std::get<2>(depth_data.back()) >= 0.4))depth_data.pop_back();
+            }
         }
     }
     
@@ -59,14 +62,14 @@ std::pair<std::vector<std::tuple<int, int, int>>, std::vector<std::tuple<int, in
             data.at(x / BlockEdgeLen).at(y / BlockEdgeLen).second++;
         }
     }
-    cv::Mat M(960, 960, CV_8UC3, cv::Scalar(0,0,255));
+   // cv::Mat M(960, 960, CV_8UC3, cv::Scalar(0,0,0));
     //std::cout<< std::setprecision(3);
-    std::vector<float> q;
+
+  //  std::vector<float> f;
     for(int i = 0;i < BoardEdgeNum;i++){
         for(int j = 0;j < BoardEdgeNum;j++){
             float z_diff = (data.at(i).at(j).first / data.at(i).at(j).second) - current_data.at(i).at(j);
             z_diff /= BlockHigh;
-            q.push_back(z_diff);
             if(z_diff >= BlockHighthresh){
                 //std::cout<<z_diff<<std::endl;
                 remove.push_back(std::make_tuple(i, j, (data.at(i).at(j).first / data.at(i).at(j).second) / BlockHigh));
@@ -75,20 +78,36 @@ std::pair<std::vector<std::tuple<int, int, int>>, std::vector<std::tuple<int, in
                 add.push_back(std::make_tuple(i, j, current_data.at(i).at(j) / BlockHigh));
             }
             current_data.at(i).at(j) = (data.at(i).at(j).first / data.at(i).at(j).second);
-            //std::cout<<current_data.at(i).at(j)<<" ";
-            for(int p = i*20 ; p < 20 ; p++){
+     //       f.push_back(current_data.at(i).at(j));
+/* 
+            for(int p = i*20 ; p < 20+i*20 ; p++){
                 cv::Vec3b* ptr = M.ptr<cv::Vec3b>( p );
-                for(int q = j*20 ; q < 20 ; q++){
-                    ptr[q] = cv::Vec3b(current_data.at(i).at(j)*10000, current_data.at(i).at(j)*10000, current_data.at(i).at(j)*10000);
+                for(int q = j*20 ; q < 20+j*20 ; q++){
+                    ptr[q] = cv::Vec3b(current_data.at(i).at(j)*5000+100, current_data.at(i).at(j)*5000+100, current_data.at(i).at(j)*5000+100);
                 }
             }
+            */
         }
-        //std::cout<<std::endl;
     }
     //std::cout<< std::setprecision(10);
     //std::cout<<current_data.at(0).at(0)<<std::endl;
-    cv::imshow("Visualizer", M);
-    int c = cv::waitKey();
+    /* 
+    std::cout<<"min"<<std::endl;
+    std::sort(f.begin(), f.end());
+    for(int a = f.size()-1; a >= 0;a--){
+        if(f.size()- a >= 10)break;
+        std::cout<<f.at(a)<<std::endl;
+    }
+    */
+    /* 
+    for(int i = 0;i < f.size();i++){
+        if(i >= 10)break;
+        std::cout<<f.at(i)<<std::endl;
+    }
+    */
+
+ //   cv::imshow("Visualizer", M);
+ //   int c = cv::waitKey();
     return std::make_pair(add, remove);
 }
 
@@ -279,7 +298,7 @@ void Detection::detectBoard(){
             BoardPosBasedData.push_back(translatePixelToP3DPoint((float)frame_pos.at(i).first, (float)frame_pos.at(i).second, intr, depth));
             //std::cout<<std::get<0>(BoardPosBasedData.back())<<" "<<std::get<1>(BoardPosBasedData.back())<<" "<<std::get<2>(BoardPosBasedData.back())<<std::endl;
         }
-        int idx[] = {0, 1, 2, 3, 0};
+        int idx[] = {0, 1, 3, 2, 0};
         float dispersion = 0;
         for(int i = 0;i < 4;i++){
             float d = Distance(BoardPosBasedData.at(idx[i]), BoardPosBasedData.at(idx[i+1]));

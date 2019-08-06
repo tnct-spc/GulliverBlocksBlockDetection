@@ -17,16 +17,17 @@
 #include <tuple>
 #include <limits>
 #include <iomanip>
+#include <algorithm>
 
 class Detection{
 private:
     std::vector<std::vector<double>> data;
-    const float BoardEdgeLen = 0.38; //Board Edge Length
-    const float BlockEdgeLen = 0.38/48.0;
+    const float BoardEdgeLen = 0.385; //Board Edge Length
+    const float BlockEdgeLen = 0.385/48.0;
     const float dispersion_thresh = 0.0005;
     const int BoardEdgeNum = 48;
     const float BlockHigh = 0.009;
-    const float BlockHighthresh = 0.9;
+    const float BlockHighthresh = 0.5;
 
 public:
     std::vector<std::tuple<float, float, float>> BoardPosBasedData;
