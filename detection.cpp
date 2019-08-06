@@ -7,20 +7,21 @@ Detection::Detection(){
     detectBoard();
     current_data = std::vector<std::vector<float>>(BoardEdgeNum, std::vector<float>(BoardEdgeNum, 0));
     std::vector<std::tuple<float, float, float>> depth_data = getDepth();
-    std::vector<std::vector<std::pair<float, int>>> data = std::vector<std::vector<std::pair<float, int>>>(BoardEdgeNum, std::vector<std::pair<float, int>>(BoardEdgeNum, std::make_pair(0, 0)));
+    std::vector<std::vector<std::vector<int>>> data = std::vector<std::vector<std::vector<int>>>(BoardEdgeNum, std::vector<std::vector<int>>(BoardEdgeNum));
+    field = std::vector<std::vector<std::set<int>>>(BoardEdgeNum, std::vector<std::set<int>>(BoardEdgeNum));
 
     for(auto d : depth_data){
         float x = std::get<0>(d);
         float y = std::get<1>(d);
         float z = std::get<2>(d);
         if(0.0 < x && x < BoardEdgeLen && 0.0 < y && y < BoardEdgeLen){
-            data.at(x / BlockEdgeLen).at(y / BlockEdgeLen).first += z;
-            data.at(x / BlockEdgeLen).at(y / BlockEdgeLen).second++;
+            data.at(x / BlockEdgeLen).at(y / BlockEdgeLen).push_back(z);
         }
     }
     for(int i = 0;i < BoardEdgeNum;i++){
         for(int j = 0;j < BoardEdgeNum;j++){
-            current_data.at(i).at(j) = (data.at(i).at(j).first / data.at(i).at(j).second);
+            std::sort(data.begin(), data.end());
+            current_data.at(i).at(j) = data.at(i).at(j).at(data.size()/2);
         }
     }
 }
@@ -31,14 +32,13 @@ std::vector<std::tuple<float, float, float>> Detection::getDepth(){
     float width = 1280;
     float height = 720;
     std::vector<std::tuple<float, float, float>> depth_data;
-    for(int i = 0;i < 2;i++){
-        rs2::frameset frames = pipe.wait_for_frames();
-        rs2::depth_frame depth = frames.get_depth_frame();
-        rs2_intrinsics intr = frames.get_profile().as<rs2::video_stream_profile>().get_intrinsics();
-        for(float x = 1;x < width;x++){
-            for(float y = 1;y < height;y++){
-                depth_data.push_back(translatePlanePoint(translatePixelToP3DPoint(x, y, intr, depth)));
-            }
+    rs2::frameset frames = pipe.wait_for_frames();
+    rs2::depth_frame depth = frames.get_depth_frame();
+    rs2_intrinsics intr = frames.get_profile().as<rs2::video_stream_profile>().get_intrinsics();
+
+    for(float x = 1;x < width;x++){
+        for(float y = 1;y < height;y++){
+            depth_data.push_back(translatePlanePoint(translatePixelToP3DPoint(x, y, intr, depth)));
         }
     }
     
@@ -46,37 +46,71 @@ std::vector<std::tuple<float, float, float>> Detection::getDepth(){
 }
 
 std::pair<std::vector<std::tuple<int, int, int>>, std::vector<std::tuple<int, int, int>>> Detection::singleDetect(){
-    std::vector<std::vector<std::vector<float>>> data = std::vector<std::vector<std::vector<float>>>(BoardEdgeNum, std::vector<std::vector<float>>(BoardEdgeNum, std::vector<float>({})));
+    std::vector<std::vector<std::vector<float>>> multiframe_data = std::vector<std::vector<std::vector<float>>>(BoardEdgeNum, std::vector<std::vector<float>>(BoardEdgeNum, std::vector<float>({})));
+    for(int i = 0;i < 3;i++){
+        std::vector<std::vector<std::vector<float>>> data = std::vector<std::vector<std::vector<float>>>(BoardEdgeNum, std::vector<std::vector<float>>(BoardEdgeNum, std::vector<float>({})));
+        std::vector<std::tuple<float, float, float>> depth_data = getDepth();
 
-    std::vector<std::tuple<float, float, float>> depth_data = getDepth();
-    std::vector<std::tuple<int, int, int>> add;
-    std::vector<std::tuple<int, int, int>> remove;
+        for(auto d : depth_data){
+            float x = std::get<0>(d);
+            float y = std::get<1>(d);
+            float z = std::get<2>(d);
+            if(0.0 < x && x < BoardEdgeLen && 0.0 < y && y < BoardEdgeLen){
+                data.at(x / BlockEdgeLen).at(y / BlockEdgeLen).push_back(z);
+            }
+        }
 
-    for(auto d : depth_data){
-        float x = std::get<0>(d);
-        float y = std::get<1>(d);
-        float z = std::get<2>(d);
-        if(0.0 < x && x < BoardEdgeLen && 0.0 < y && y < BoardEdgeLen){
-            data.at(x / BlockEdgeLen).at(y / BlockEdgeLen).push_back(z);
+        for(int i = 0;i < BoardEdgeNum;i++){
+            for(int j = 0;j < BoardEdgeNum;j++){
+                std::sort(data.at(i).at(j).begin(), data.at(i).at(j).end());
+                float median = 0;
+                if(data.at(i).at(j).empty()){
+                    median = current_data.at(i).at(j);
+                }else{
+                    median = data.at(i).at(j).at(data.at(i).at(j).size()/2);
+                }
+                multiframe_data.at(i).at(j).push_back(median);
+            }
         }
     }
+
    // cv::Mat M(960, 960, CV_8UC3, cv::Scalar(0,0,0));
     //std::cout<< std::setprecision(3);
 
   //  std::vector<float> f;
+    std::vector<std::tuple<int, int, int>> add;
+    std::vector<std::tuple<int, int, int>> remove;
     for(int i = 0;i < BoardEdgeNum;i++){
         for(int j = 0;j < BoardEdgeNum;j++){
-            std::sort(data.at(i).at(j).begin(), data.at(i).at(j).end());
-            float median = 0;
-            if(data.at(i).at(j).empty()){
-                median = current_data.at(i).at(j);
-            }else{
-                median = data.at(i).at(j).at(data.at(i).at(j).size()/2);
+            std::vector<float> dis_data = multiframe_data.at(i).at(j);
+            float sum = std::accumulate(dis_data.begin(), dis_data.end(), 0.0); 
+
+            float average = sum / dis_data.size();
+
+            float bunsan = 0;
+            for(float a : dis_data){
+                bunsan += std::pow(average - a, 2);
+            }
+            if(bunsan > 2.0){
+                continue;
             }
 
-            current_data.at(i).at(j) = (median);
-     //       f.push_back(current_data.at(i).at(j));
-/* 
+            average /= BlockHigh;
+            int high = round(average)-1;
+            high = std::max(high, -1);
+            while(true){
+                auto itr = field.at(i).at(j).upper_bound(high);
+                if(itr == field.at(i).at(j).end())break;
+                field.at(i).at(j).erase(itr);
+                remove.push_back(std::make_tuple(i, j, high));
+            }
+            if(high != -1 && field.at(i).at(j).find(high) == field.at(i).at(j).end()){
+                field.at(i).at(j).insert(high);
+                add.push_back(std::make_tuple(i, j, high));
+            }
+
+            //f.push_back(current_data.at(i).at(j));
+            /* 
             for(int p = i*20 ; p < 20+i*20 ; p++){
                 cv::Vec3b* ptr = M.ptr<cv::Vec3b>( p );
                 for(int q = j*20 ; q < 20+j*20 ; q++){
