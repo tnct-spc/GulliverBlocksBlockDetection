@@ -38,7 +38,6 @@ std::vector<std::tuple<float, float, float>> Detection::getDepth(){
         for(float x = 1;x < width;x++){
             for(float y = 1;y < height;y++){
                 depth_data.push_back(translatePlanePoint(translatePixelToP3DPoint(x, y, intr, depth)));
-                if(abs(std::get<2>(depth_data.back()) >= 0.4))depth_data.pop_back();
             }
         }
     }
@@ -47,7 +46,7 @@ std::vector<std::tuple<float, float, float>> Detection::getDepth(){
 }
 
 std::pair<std::vector<std::tuple<int, int, int>>, std::vector<std::tuple<int, int, int>>> Detection::singleDetect(){
-    std::vector<std::vector<std::pair<float, int>>> data = std::vector<std::vector<std::pair<float, int>>>(BoardEdgeNum, std::vector<std::pair<float, int>>(BoardEdgeNum, std::make_pair(0, 0)));
+    std::vector<std::vector<std::vector<float>>> data = std::vector<std::vector<std::vector<float>>>(BoardEdgeNum, std::vector<std::vector<float>>(BoardEdgeNum, std::vector<float>({})));
 
     std::vector<std::tuple<float, float, float>> depth_data = getDepth();
     std::vector<std::tuple<int, int, int>> add;
@@ -58,8 +57,7 @@ std::pair<std::vector<std::tuple<int, int, int>>, std::vector<std::tuple<int, in
         float y = std::get<1>(d);
         float z = std::get<2>(d);
         if(0.0 < x && x < BoardEdgeLen && 0.0 < y && y < BoardEdgeLen){
-            data.at(x / BlockEdgeLen).at(y / BlockEdgeLen).first += z;
-            data.at(x / BlockEdgeLen).at(y / BlockEdgeLen).second++;
+            data.at(x / BlockEdgeLen).at(y / BlockEdgeLen).push_back(z);
         }
     }
    // cv::Mat M(960, 960, CV_8UC3, cv::Scalar(0,0,0));
@@ -68,16 +66,15 @@ std::pair<std::vector<std::tuple<int, int, int>>, std::vector<std::tuple<int, in
   //  std::vector<float> f;
     for(int i = 0;i < BoardEdgeNum;i++){
         for(int j = 0;j < BoardEdgeNum;j++){
-            float z_diff = (data.at(i).at(j).first / data.at(i).at(j).second) - current_data.at(i).at(j);
-            z_diff /= BlockHigh;
-            if(z_diff >= BlockHighthresh){
-                //std::cout<<z_diff<<std::endl;
-                remove.push_back(std::make_tuple(i, j, (data.at(i).at(j).first / data.at(i).at(j).second) / BlockHigh));
-            }else if(z_diff <= -BlockHighthresh){
-                //std::cout<<z_diff<<std::endl;
-                add.push_back(std::make_tuple(i, j, current_data.at(i).at(j) / BlockHigh));
+            std::sort(data.at(i).at(j).begin(), data.at(i).at(j).end());
+            float median = 0;
+            if(data.at(i).at(j).empty()){
+                median = current_data.at(i).at(j);
+            }else{
+                median = data.at(i).at(j).at(data.at(i).at(j).size()/2);
             }
-            current_data.at(i).at(j) = (data.at(i).at(j).first / data.at(i).at(j).second);
+
+            current_data.at(i).at(j) = (median);
      //       f.push_back(current_data.at(i).at(j));
 /* 
             for(int p = i*20 ; p < 20+i*20 ; p++){
