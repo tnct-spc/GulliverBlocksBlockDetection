@@ -50,7 +50,7 @@ bool Communication::isDetection(std::string url){
 
   hnd = curl_easy_init();
   curl_easy_setopt(hnd, CURLOPT_URL, url.c_str());
-  curl_easy_setopt(hnd, CURLOPT_WRITEFUNCTION, WriteCallback);
+  curl_easy_setopt(hnd, CURLOPT_WRITEFUNCTION, writeCallback);
   curl_easy_setopt(hnd, CURLOPT_WRITEDATA, &readBuffer);
 
   curl_easy_perform(hnd);
@@ -64,7 +64,7 @@ bool Communication::isDetection(std::string url){
   
 }
 
-size_t Communication::WriteCallback(void *contents, size_t size, size_t nmemb, void *userp){
+size_t Communication::writeCallback(void *contents, size_t size, size_t nmemb, void *userp){
   ((std::string*)userp)->append((char*)contents, size * nmemb);
   return size * nmemb;
 }
