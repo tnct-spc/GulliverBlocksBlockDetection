@@ -1,6 +1,6 @@
 #include"communication.h"
 
-void Communication::postJson(std::string url ,std::pair<std::vector<std::tuple<int,int,int>>,std::vector<std::tuple<int,int,int>>> block_data){
+void Communication::postJson(std::string url, std::pair<std::vector<std::tuple<int,int,int>>, std::vector<std::tuple<int,int,int>>> block_data){
   int color_id = 0;
   std::string json = "{\"blocks\":[";
   
