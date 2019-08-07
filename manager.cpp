@@ -28,7 +28,6 @@ void Manager::RunSingleDetection(){
        // for(auto a : now_blocks){
        //     std::cout<<std::get<0>(a)<<" "<<std::get<1>(a)<<" "<<std::get<2>(a)<<std::endl;
        // }
-       std::cout<<"now"<<now_blocks.size()<<std::endl;
        // std::cout<<std::endl;
         std::cout<<cnt<<std::endl;
         cnt++;

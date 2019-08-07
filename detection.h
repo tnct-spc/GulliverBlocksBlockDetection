@@ -27,14 +27,14 @@ private:
     const float BlockEdgeLen = 0.385/48.0;
     const float dispersion_thresh = 0.0005;
     const int BoardEdgeNum = 48;
-    const float BlockHigh = 0.008;
+    const float BlockHigh = 0.009;
     const float BlockHighthresh = 0.5;
 
 public:
     std::vector<std::tuple<float, float, float>> BoardPosBasedData;
     std::vector<std::pair<float, float>> BoardPos;
-    std::vector<std::vector<float>> current_data;
     std::vector<std::vector<std::set<int>>> field;
+    std::vector<std::vector<float>> based_data;
     rs2::pipeline pipe;
     rs2::config cfg;
 
