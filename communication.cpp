@@ -51,7 +51,7 @@ void Communication::postJson(std::string url ,std::pair<std::vector<std::tuple<i
 
 }
 
-bool Communication::isUrl(std::string url){
+bool Communication::isDetection(std::string url){
   CURL *hnd;
   std::string readBuffer;
 
