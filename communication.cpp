@@ -1,42 +1,36 @@
 #include"communication.h"
 
 void Communication::postJson(std::string url ,std::pair<std::vector<std::tuple<int,int,int>>,std::vector<std::tuple<int,int,int>>> block_data){
-  int id = 0;
   int color_id = 0;
-  std::string put;
-  std::time_t unix_time = std::time(nullptr);
-  int x,y,z;
+  std::string json = "{\"blocks\":[";
   
-  //ブロックの設置か削除かを確認
-  if (
-      std::get<0>(block_data.first.at(0)) == 0 &&
-      std::get<1>(block_data.first.at(0)) == 0 &&
-      std::get<2>(block_data.first.at(0)) == 0
-      )
+  for (size_t i = 0; i < block_data.first.size(); i++)
   {
-      x = std::get<0>(block_data.second.at(0));
-      y = std::get<1>(block_data.second.at(0));
-      z = std::get<2>(block_data.second.at(0));
+  json = json + "{\"put\":" + "true" \
+              + ",\"colorID\":" + "\""+ std::to_string(color_id) + "\"" \
+              + ",\"x\":" + std::to_string(std::get<0>(block_data.first.at(i))) \
+              + ",\"y\":" + std::to_string(std::get<1>(block_data.first.at(i))) \
+              + ",\"z\":" + std::to_string(std::get<2>(block_data.first.at(i))) \
+              + "},";
+  }
 
-      put = "false";
-  } else {
-      x = std::get<0>(block_data.first.at(0));
-      y = std::get<1>(block_data.first.at(0));
-      z = std::get<2>(block_data.first.at(0));
-
-      put = "true";
+  for (size_t i = 0; i < block_data.second.size(); i++)
+  {
+  json = json + "{\"put\":" + "false" \
+              + ",\"x\":" + std::to_string(std::get<0>(block_data.second.at(i))) \
+              + ",\"y\":" + std::to_string(std::get<1>(block_data.second.at(i))) \
+              + ",\"z\":" + std::to_string(std::get<2>(block_data.second.at(i))) \
+              + "}";
+  
+  if (i + 1 != block_data.second.size())
+  {
+    json += ",";
+  }
   }
   
-  
-  std::string json = "{\"blocks\":[{\"ID\":"  + std::to_string(id) \
-                   + ",\"colorID\":" + std::to_string(color_id) \
-                   + ",\"put\":" + put \
-                   + ",\"time\":" + std::to_string(unix_time) \
-                   + ",\"x\":" + std::to_string(x) \
-                   + ",\"y\":" + std::to_string(y) \
-                   + ",\"z\":" + std::to_string(z) \
-                   + "}]}";
+  json += "]}";
 
+  
   //サーバーにPOST
   CURL *hnd;
 
@@ -48,8 +42,7 @@ void Communication::postJson(std::string url ,std::pair<std::vector<std::tuple<i
   curl_easy_perform(hnd);
   curl_easy_cleanup(hnd);
   hnd = NULL;
-
-}
+  } 
 
 bool Communication::isDetection(std::string url){
   CURL *hnd;
@@ -69,4 +62,9 @@ bool Communication::isDetection(std::string url){
   else if (readBuffer == "0") 
     return false;
   
+}
+
+size_t Communication::WriteCallback(void *contents, size_t size, size_t nmemb, void *userp){
+  ((std::string*)userp)->append((char*)contents, size * nmemb);
+  return size * nmemb;
 }
