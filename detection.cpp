@@ -55,7 +55,11 @@ std::vector<std::tuple<float, float, float>> Detection::getDepth(){
     float height = 720;
     std::vector<std::tuple<float, float, float>> depth_data;
     rs2::frameset frames = pipe.wait_for_frames();
-    rs2::depth_frame depth = frames.get_depth_frame();
+    rs2::align align(RS2_STREAM_COLOR);
+    auto aligned_frames = align.process(frames);
+    rs2::video_frame color_frame = aligned_frames.first(RS2_STREAM_COLOR);
+    rs2::depth_frame depth = aligned_frames.get_depth_frame();
+
     rs2_intrinsics intr = frames.get_profile().as<rs2::video_stream_profile>().get_intrinsics();
 
     for(float x = 1;x < width;x++){
@@ -348,7 +352,10 @@ void Detection::detectBoard(){
     //    std::cout<<std::endl;
 
         rs2::frameset pframes = pipe.wait_for_frames();
-        rs2::depth_frame depth = pframes.get_depth_frame();
+        rs2::align align(RS2_STREAM_COLOR);
+        auto aligned_frames = align.process(pframes);
+        rs2::video_frame color_frame = aligned_frames.first(RS2_STREAM_COLOR);
+        rs2::depth_frame depth = aligned_frames.get_depth_frame();
 
         std::cout<<depth.get_width()<<" "<<depth.get_height()<<std::endl;
 
@@ -382,10 +389,14 @@ void Detection::detectBoard(){
 
 std::tuple<float, float, float> Detection::translatePixelToP3DPoint(float x, float y){
     rs2::frameset pframes = pipe.wait_for_frames();
+    rs2::align align(RS2_STREAM_COLOR);
+    auto aligned_frames = align.process(pframes);
+    rs2::video_frame color_frame = aligned_frames.first(RS2_STREAM_COLOR);
+    rs2::depth_frame depth = aligned_frames.get_depth_frame();
+
     rs2_intrinsics intr = pframes.get_profile().as<rs2::video_stream_profile>().get_intrinsics(); // Calibration data
     float pixel[2] = {x, y};
     float qpoint[3];
-    rs2::depth_frame depth = pframes.get_depth_frame();
     rs2_deproject_pixel_to_point(qpoint, &intr, pixel, depth.get_distance(pixel[0], pixel[1]));
     
     return std::make_tuple(qpoint[0], qpoint[1], qpoint[2]);
