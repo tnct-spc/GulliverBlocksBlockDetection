@@ -19,11 +19,31 @@ Detection::Detection(){
             }
         }
     }
+    std::cout<<"got data"<<std::endl;
     for(int i = 0;i < BoardEdgeNum;i++){
         for(int j = 0;j < BoardEdgeNum;j++){
-            data.at(i).at(j).pop_back();
-            data.at(i).at(j).erase(data.at(i).at(j).begin());
-            based_data.at(i).at(j) = std::accumulate(data.at(i).at(j).begin(), data.at(i).at(j).end(), 0.0) / data.at(i).at(j).size();
+            //std::cout<<data.at(i).at(j).size()<<std::endl;
+            std::vector<float> dis_data = data.at(i).at(j);
+            float sum = std::accumulate(dis_data.begin(), dis_data.end(), 0.0); 
+
+            float average = sum / dis_data.size();
+
+            float bunsan = 0;
+            for(float a : dis_data){
+                bunsan += std::pow(average - a, 2);
+            }
+            bunsan /= dis_data.size();
+            float hensa = std::sqrt(bunsan);
+            float t_average = 0;
+            int addcnt = 0;
+            for(auto x : dis_data){
+                if(((x - average) / hensa) < 2){
+                    t_average += x;
+                    addcnt++;
+                }
+            }
+            average = t_average / addcnt;
+            based_data.at(i).at(j) = average;
         }
     }
 }
@@ -51,8 +71,9 @@ std::pair<std::vector<std::tuple<int, int, int>>, std::vector<std::tuple<int, in
     std::vector<std::vector<std::vector<float>>> multiframe_data = std::vector<std::vector<std::vector<float>>>(BoardEdgeNum, std::vector<std::vector<float>>(BoardEdgeNum, std::vector<float>({})));
     std::vector<std::vector<std::vector<float>>> all_data = std::vector<std::vector<std::vector<float>>>(BoardEdgeNum, std::vector<std::vector<float>>(BoardEdgeNum, std::vector<float>({})));
 
-    for(int w = 0;w < 3;w++){
-        std::vector<std::vector<std::vector<float>>> data = std::vector<std::vector<std::vector<float>>>(BoardEdgeNum, std::vector<std::vector<float>>(BoardEdgeNum, std::vector<float>({})));
+    std::vector<std::vector<std::vector<float>>> data = std::vector<std::vector<std::vector<float>>>(BoardEdgeNum, std::vector<std::vector<float>>(BoardEdgeNum, std::vector<float>({})));
+    std::cout<<"getting data now"<<std::endl;
+    for(int i = 0;i < 5;i++){
         std::vector<std::tuple<float, float, float>> depth_data = getDepth();
         for(auto d : depth_data){
             float x = std::get<0>(d);
@@ -62,17 +83,19 @@ std::pair<std::vector<std::tuple<int, int, int>>, std::vector<std::tuple<int, in
                 data.at(x / BlockEdgeLen).at(y / BlockEdgeLen).push_back(z);
             }
         }
+    }
+    std::cout<<"finish get data"<<std::endl;
 
-        for(int i = 0;i < BoardEdgeNum;i++){
-            for(int j = 0;j < BoardEdgeNum;j++){
-                for(auto x : data.at(i).at(j))all_data.at(i).at(j).push_back(x);
-                //std::sort(data.at(i).at(j).begin(), data.at(i).at(j).end());
-                //  data.at(i).at(j).pop_back();
-                //  data.at(i).at(j).erase(data.at(i).at(j).begin());
-                multiframe_data.at(i).at(j).push_back(std::accumulate(data.at(i).at(j).begin(), data.at(i).at(j).end(), 0.0) / data.at(i).at(j).size());
-            }
+    for(int i = 0;i < BoardEdgeNum;i++){
+        for(int j = 0;j < BoardEdgeNum;j++){
+           // for(auto x : data.at(i).at(j))all_data.at(i).at(j).push_back(x);
+            //std::sort(data.at(i).at(j).begin(), data.at(i).at(j).end());
+            //  data.at(i).at(j).pop_back();
+            //  data.at(i).at(j).erase(data.at(i).at(j).begin());
+            //multiframe_data.at(i).at(j).push_back(std::accumulate(data.at(i).at(j).begin(), data.at(i).at(j).end(), 0.0) / data.at(i).at(j).size());
         }
     }
+    
     
 
     cv::Mat M(960, 960, CV_8UC3, cv::Scalar(0,0,0));
@@ -82,9 +105,8 @@ std::pair<std::vector<std::tuple<int, int, int>>, std::vector<std::tuple<int, in
     std::vector<std::tuple<int, int, int>> add;
     std::vector<std::tuple<int, int, int>> remove;
     for(int i = 0;i < BoardEdgeNum;i++){
-        for(int j = 0;j < BoardEdgeNum;j++){
-            /* 
-            std::vector<float> dis_data = multiframe_data.at(i).at(j);
+        for(int j = 0;j < BoardEdgeNum;j++){    
+            std::vector<float> dis_data = data.at(i).at(j);
             float sum = std::accumulate(dis_data.begin(), dis_data.end(), 0.0); 
 
             float average = sum / dis_data.size();
@@ -94,22 +116,19 @@ std::pair<std::vector<std::tuple<int, int, int>>, std::vector<std::tuple<int, in
                 bunsan += std::pow(average - a, 2);
             }
             bunsan /= dis_data.size();
-             
-            if(bunsan > 1.0){
-                continue;
+            float hensa = std::sqrt(bunsan);
+            float t_average = 0;
+            int addcnt = 0;
+            for(auto x : dis_data){
+                if(((x - average) / hensa) < 2){
+                    t_average += x;
+                    addcnt++;
+                }
             }
-            
-            */
-            float average = 0.0;
-            
-            std::sort(all_data.at(i).at(j).begin(), all_data.at(i).at(j).end());
-            for(int k = 0 ; k < all_data.at(i).at(j).size() ; k++){
-                average += all_data.at(i).at(j).at(k);
-            }
-            average /= all_data.at(i).at(j).size();
+            average = t_average / addcnt;
             average -= based_data.at(i).at(j);
             average /= BlockHigh;
-            int high = std::floor(average)-1;
+            int high = std::round(average)-1;
             high = std::max(high, -1);
             while(true){
                 auto itr = field.at(i).at(j).upper_bound(high);
@@ -340,11 +359,11 @@ void Detection::detectBoard(){
             BoardPosBasedData.push_back(translatePixelToP3DPoint((float)frame_pos.at(i).first, (float)frame_pos.at(i).second, intr, depth));
             //std::cout<<std::get<0>(BoardPosBasedData.back())<<" "<<std::get<1>(BoardPosBasedData.back())<<" "<<std::get<2>(BoardPosBasedData.back())<<std::endl;
         }
-        int idx[] = {0, 1, 3, 2, 0};
+        int idx[] = {0, 1, 2, 3, 0};
         float dispersion = 0;
         for(int i = 0;i < 4;i++){
             float d = Distance(BoardPosBasedData.at(idx[i]), BoardPosBasedData.at(idx[i+1]));
-            dispersion += std::pow(d-BoardEdgeLen,2);
+            dispersion += std::pow(d - BoardEdgeLen,2);
             std::cout<<d<<std::endl;
         }
         dispersion /= 4;
@@ -357,6 +376,7 @@ void Detection::detectBoard(){
         auto t = translatePlanePoint(BoardPosBasedData.at(i));
         BoardPos.push_back(std::make_pair(std::get<0>(t), std::get<1>(t)));
     }
+    std::sort(BoardPosBasedData.begin(), BoardPosBasedData.end());
     std::sort(BoardPos.begin(), BoardPos.end());
 }
 
