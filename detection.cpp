@@ -123,19 +123,20 @@ std::pair<std::vector<std::tuple<int, int, int>>, std::vector<std::tuple<int, in
             for(int k = 2;k < 5;k++){
                 for(auto x : multiframe_data.at(i).at(j).at(k))front.push_back(x);
             }
-            std::vector<float> dis_data = back;
-            float sum = std::accumulate(dis_data.begin(), dis_data.end(), 0.0); 
+            
+            dis_data = back;
+            sum = std::accumulate(dis_data.begin(), dis_data.end(), 0.0); 
 
-            float average = sum / dis_data.size();
+            average = sum / dis_data.size();
 
-            float bunsan = 0;
+            bunsan = 0;
             for(float a : dis_data){
                 bunsan += std::pow(average - a, 2);
             }
             bunsan /= dis_data.size();
-            float hensa = std::sqrt(bunsan);
-            float t_average = 0;
-            int addcnt = 0;
+            hensa = std::sqrt(bunsan);
+            t_average = 0;
+            addcnt = 0;
             for(auto x : dis_data){
                 if(((x - average) / hensa) < 2){
                     t_average += x;
