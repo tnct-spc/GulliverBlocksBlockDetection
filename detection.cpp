@@ -77,7 +77,7 @@ std::pair<std::vector<std::tuple<int, int, int>>, std::vector<std::tuple<int, in
     std::vector<std::vector<bool>> flag(BoardEdgeNum, std::vector<bool>(BoardEdgeNum, true));
     std::vector<std::vector<std::vector<float>>> data = std::vector<std::vector<std::vector<float>>>(BoardEdgeNum, std::vector<std::vector<float>>(BoardEdgeNum, std::vector<float>({})));
     std::cout<<"getting data now"<<std::endl;
-    for(int i = 0;i < 5;i++){
+    for(int i = 0;i < 6;i++){
         std::vector<std::tuple<float, float, float>> depth_data = getDepth();
         for(auto d : depth_data){
             float x = std::get<0>(d);
@@ -97,7 +97,7 @@ std::pair<std::vector<std::tuple<int, int, int>>, std::vector<std::tuple<int, in
             std::vector<float> back;
             float front_ave;
             float back_ave;
-            for(int k = 0;k < 2;k++){
+            for(int k = 0;k < 3;k++){
                 for(auto x : multiframe_data.at(i).at(j).at(k))front.push_back(x);
             }
             std::vector<float> dis_data = front;
@@ -120,10 +120,10 @@ std::pair<std::vector<std::tuple<int, int, int>>, std::vector<std::tuple<int, in
                 }
             }
             front_ave = t_average / addcnt;
-            for(int k = 2;k < 5;k++){
+            for(int k = 3;k < 6;k++){
                 for(auto x : multiframe_data.at(i).at(j).at(k))front.push_back(x);
             }
-            
+
             dis_data = back;
             sum = std::accumulate(dis_data.begin(), dis_data.end(), 0.0); 
 
