@@ -32,7 +32,6 @@ private:
 
 public:
     std::vector<std::tuple<float, float, float>> BoardPosBasedData;
-    std::vector<std::pair<float, float>> BoardPos;
     std::vector<std::vector<std::set<int>>> field;
     std::vector<std::vector<float>> based_data;
     rs2::pipeline pipe;

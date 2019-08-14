@@ -51,7 +51,6 @@ Detection::Detection(){
 
 std::vector<std::tuple<float, float, float>> Detection::getDepth(){
 
-
     float width = 1280;
     float height = 720;
     std::vector<std::tuple<float, float, float>> depth_data;
@@ -424,14 +423,21 @@ void Detection::detectBoard(){
             is_dispersion = false;
         }
     }while(is_dispersion);
-    BoardPos.clear();
 
     for(int i = 0;i < 4;i++){
         auto t = translatePlanePoint(BoardPosBasedData.at(i));
-        BoardPos.push_back(std::make_pair(std::get<0>(t), std::get<1>(t)));
     }
-    std::sort(BoardPosBasedData.begin(), BoardPosBasedData.end());
-    std::sort(BoardPos.begin(), BoardPos.end());
+    std::vector<std::pair<float, int>> ins;
+    for(int i = 1;i < 4;i++){
+        ins.push_back(std::make_pair(std::pow(std::get<0>(BoardPosBasedData.at(i)) - std::get<0>(BoardPosBasedData.at(0)), 2) + std::pow(std::get<1>(BoardPosBasedData.at(i)) - std::get<1>(BoardPosBasedData.at(0)), 2 ) + std::pow(std::get<2>(BoardPosBasedData.at(i)) - std::get<2>(BoardPosBasedData.at(0)), 2), i));
+    }
+    std::vector<std::tuple<float, float, float>> _BoardPosBasedData;
+    _BoardPosBasedData.push_back(BoardPosBasedData.front());
+    std::sort(ins.begin(), ins.end());
+    for(int i = 0;i < 4;i++){
+        _BoardPosBasedData.push_back(BoardPosBasedData.at(ins.at(i).second));
+    }
+    BoardPosBasedData = _BoardPosBasedData;
 }
 
 std::tuple<float, float, float> Detection::translatePixelToP3DPoint(float x, float y){
