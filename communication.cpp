@@ -42,7 +42,7 @@ void Communication::postJson(std::string url, std::pair<std::vector<std::tuple<i
   curl_easy_perform(hnd);
   curl_easy_cleanup(hnd);
   hnd = NULL;
-  } 
+} 
 
 bool Communication::isDetection(std::string url){
   CURL *hnd;
