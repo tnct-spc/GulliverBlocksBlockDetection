@@ -444,7 +444,6 @@ void Detection::detectBoard(){
     std::vector<std::pair<float, int>> ins;
     for(int i = 0;i < 4;i++){
         ins.push_back(std::make_pair(std::pow(std::get<0>(BoardPosBasedData.at(i)) - 0, 2) + std::pow(std::get<1>(BoardPosBasedData.at(i)) - 0, 2 ) + std::pow(std::get<2>(BoardPosBasedData.at(i)) - 0, 2), i));
-        //ins.push_back(std::make_pair(std::pow(std::get<0>(BoardPosBasedData.at(i)) - std::get<0>(BoardPosBasedData.at(0)), 2) + std::pow(std::get<1>(BoardPosBasedData.at(i)) - std::get<1>(BoardPosBasedData.at(0)), 2 ) + std::pow(std::get<2>(BoardPosBasedData.at(i)) - std::get<2>(BoardPosBasedData.at(0)), 2), i));
     }
     auto q = *std::min_element(ins.begin(), ins.end());
     int _i = q.second;
