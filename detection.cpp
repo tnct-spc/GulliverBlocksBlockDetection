@@ -408,11 +408,23 @@ void Detection::detectBoard(){
             BoardPosBasedData.push_back(translatePixelToP3DPoint((float)frame_pos.at(i).first, (float)frame_pos.at(i).second, intr, depth));
             //std::cout<<std::get<0>(BoardPosBasedData.back())<<" "<<std::get<1>(BoardPosBasedData.back())<<" "<<std::get<2>(BoardPosBasedData.back())<<std::endl;
         }
-        int idx[] = {0, 1, 3, 2, 0};
+        std::vector<std::pair<float, int>> ins;
+        for(int i = 1;i < 4;i++){
+            ins.push_back(std::make_pair(std::pow(std::get<0>(BoardPosBasedData.at(i)) - std::get<0>(BoardPosBasedData.at(0)), 2) + std::pow(std::get<1>(BoardPosBasedData.at(i)) - std::get<1>(BoardPosBasedData.at(0)), 2 ) + std::pow(std::get<2>(BoardPosBasedData.at(i)) - std::get<2>(BoardPosBasedData.at(0)), 2), i));
+        }
+        std::vector<std::tuple<float, float, float>> _BoardPosBasedData;
+        _BoardPosBasedData.push_back(BoardPosBasedData.front());
+        std::sort(ins.begin(), ins.end());
+        for(int i = 0;i < 4;i++){
+            _BoardPosBasedData.push_back(BoardPosBasedData.at(ins.at(i).second));
+        }
+        BoardPosBasedData = _BoardPosBasedData;
+        int idx[] = {0, 1, 2, 3, 0};
+        std::swap(BoardPosBasedData.at(2), BoardPosBasedData.at(3));
         float dispersion = 0;
         for(int i = 0;i < 4;i++){
             float d = Distance(BoardPosBasedData.at(idx[i]), BoardPosBasedData.at(idx[i+1]));
-            dispersion += std::pow(d - BoardEdgeLen,2);
+            dispersion += std::pow(d - BoardEdgeLen, 2);
             std::cout<<d<<std::endl;
         }
         dispersion /= 4;
@@ -429,18 +441,26 @@ void Detection::detectBoard(){
         }
     }while(is_dispersion);
 
-    for(int i = 0;i < 4;i++){
-        auto t = translatePlanePoint(BoardPosBasedData.at(i));
-    }
     std::vector<std::pair<float, int>> ins;
+    for(int i = 0;i < 4;i++){
+        ins.push_back(std::make_pair(std::pow(std::get<0>(BoardPosBasedData.at(i)) - 0, 2) + std::pow(std::get<1>(BoardPosBasedData.at(i)) - 0, 2 ) + std::pow(std::get<2>(BoardPosBasedData.at(i)) - 0, 2), i));
+        //ins.push_back(std::make_pair(std::pow(std::get<0>(BoardPosBasedData.at(i)) - std::get<0>(BoardPosBasedData.at(0)), 2) + std::pow(std::get<1>(BoardPosBasedData.at(i)) - std::get<1>(BoardPosBasedData.at(0)), 2 ) + std::pow(std::get<2>(BoardPosBasedData.at(i)) - std::get<2>(BoardPosBasedData.at(0)), 2), i));
+    }
+    auto q = *std::min_element(ins.begin(), ins.end());
+    int _i = q.second;
+    std::swap(BoardPosBasedData.at(_i), BoardPosBasedData.at(0));
+    std::vector<std::tuple<float, float, float>> _BoardPosBasedData;
+    _BoardPosBasedData.push_back(BoardPosBasedData.front());
+    ins.clear();
     for(int i = 1;i < 4;i++){
         ins.push_back(std::make_pair(std::pow(std::get<0>(BoardPosBasedData.at(i)) - std::get<0>(BoardPosBasedData.at(0)), 2) + std::pow(std::get<1>(BoardPosBasedData.at(i)) - std::get<1>(BoardPosBasedData.at(0)), 2 ) + std::pow(std::get<2>(BoardPosBasedData.at(i)) - std::get<2>(BoardPosBasedData.at(0)), 2), i));
     }
-    std::vector<std::tuple<float, float, float>> _BoardPosBasedData;
-    _BoardPosBasedData.push_back(BoardPosBasedData.front());
     std::sort(ins.begin(), ins.end());
     for(int i = 0;i < 4;i++){
         _BoardPosBasedData.push_back(BoardPosBasedData.at(ins.at(i).second));
+    }
+    if(std::get<0>(BoardPosBasedData.at(1)) < std::get<0>(BoardPosBasedData.at(2))){
+        std::swap(BoardPosBasedData.at(1), BoardPosBasedData.at(2));
     }
     BoardPosBasedData = _BoardPosBasedData;
 }
@@ -515,5 +535,5 @@ std::tuple<float, float, float> Detection::translatePlanePoint(std::tuple<float,
     float x2 = std::get<0>(BoardPosBasedData.at(2)) - std::get<0>(BoardPosBasedData.at(0));
     float y2 = std::get<1>(BoardPosBasedData.at(2)) - std::get<1>(BoardPosBasedData.at(0));
     float z2 = std::get<2>(BoardPosBasedData.at(2)) - std::get<2>(BoardPosBasedData.at(0));
-    return std::make_tuple(inner_product(std::make_tuple(x, y, z), std::make_tuple(x2, y2, z2)) / vector_distance(std::make_tuple(x2, y2, z2)), inner_product(std::make_tuple(x, y, z), std::make_tuple(x1, y1, z1)) / vector_distance(std::make_tuple(x1, y1, z1)), inner_product(outer_product(std::make_tuple(x2, y2, z2), std::make_tuple(x1, y1, z1)), std::make_tuple(x, y, z)) / vector_distance(std::make_tuple(x1, y1, z1)) / vector_distance(std::make_tuple(x2, y2, z2)));
+    return std::make_tuple(inner_product(std::make_tuple(x, y, z), std::make_tuple(x1, y1, z1)) / vector_distance(std::make_tuple(x1, y1, z1)), inner_product(std::make_tuple(x, y, z), std::make_tuple(x2, y2, z2)) / vector_distance(std::make_tuple(x2, y2, z2)), inner_product(outer_product(std::make_tuple(x1, y1, z1), std::make_tuple(x2, y2, z2)), std::make_tuple(x, y, z)) / vector_distance(std::make_tuple(x1, y1, z1)) / vector_distance(std::make_tuple(x2, y2, z2)));
 }
