@@ -73,11 +73,12 @@ std::vector<std::tuple<float, float, float>> Detection::getDepth(){
 }
 
 std::pair<std::vector<std::tuple<int, int, int>>, std::vector<std::tuple<int, int, int>>> Detection::singleDetect(){
-    std::vector<std::vector<std::vector<std::vector<float>>>> multiframe_data = std::vector<std::vector<std::vector<std::vector<float>>>>(BoardEdgeNum, std::vector<std::vector<std::vector<float>>>(BoardEdgeNum, std::vector<std::vector<float>>(5, std::vector<float>({}))));
+    int t_num = 6;
+    std::vector<std::vector<std::vector<std::vector<float>>>> multiframe_data = std::vector<std::vector<std::vector<std::vector<float>>>>(BoardEdgeNum, std::vector<std::vector<std::vector<float>>>(BoardEdgeNum, std::vector<std::vector<float>>(t_num, std::vector<float>({}))));
     std::vector<std::vector<bool>> flag(BoardEdgeNum, std::vector<bool>(BoardEdgeNum, true));
     std::vector<std::vector<std::vector<float>>> data = std::vector<std::vector<std::vector<float>>>(BoardEdgeNum, std::vector<std::vector<float>>(BoardEdgeNum, std::vector<float>({})));
     std::cout<<"getting data now"<<std::endl;
-    for(int i = 0;i < 6;i++){
+    for(int i = 0;i < t_num;i++){
         std::vector<std::tuple<float, float, float>> depth_data = getDepth();
         for(auto d : depth_data){
             float x = std::get<0>(d);
@@ -97,7 +98,7 @@ std::pair<std::vector<std::tuple<int, int, int>>, std::vector<std::tuple<int, in
             std::vector<float> back;
             float front_ave;
             float back_ave;
-            for(int k = 0;k < 3;k++){
+            for(int k = 0;k < t_num/2;k++){
                 for(auto x : multiframe_data.at(i).at(j).at(k))front.push_back(x);
             }
             std::vector<float> dis_data = front;
@@ -120,7 +121,7 @@ std::pair<std::vector<std::tuple<int, int, int>>, std::vector<std::tuple<int, in
                 }
             }
             front_ave = t_average / addcnt;
-            for(int k = 3;k < 6;k++){
+            for(int k = t_num;k < t_num;k++){
                 for(auto x : multiframe_data.at(i).at(j).at(k))front.push_back(x);
             }
 
@@ -144,7 +145,9 @@ std::pair<std::vector<std::tuple<int, int, int>>, std::vector<std::tuple<int, in
                 }
             }
             back_ave = t_average / addcnt;
-            if(abs(back_ave - front_ave)/BlockHigh >= 1){
+            front_ave -= based_data.at(i).at(j);
+            back_ave -= based_data.at(i).at(j);
+            if(abs(back_ave - front_ave)/BlockHigh >= 2){
                 flag.at(i).at(j) = false;
             }
 
@@ -477,7 +480,7 @@ std::tuple<float, float, float> Detection::translatePlanePoint(float x, float y,
     float x2 = std::get<0>(BoardPosBasedData.at(2)) - std::get<0>(BoardPosBasedData.at(0));
     float y2 = std::get<1>(BoardPosBasedData.at(2)) - std::get<1>(BoardPosBasedData.at(0));
     float z2 = std::get<2>(BoardPosBasedData.at(2)) - std::get<2>(BoardPosBasedData.at(0));
-    return std::make_tuple(inner_product(std::make_tuple(x, y, z), std::make_tuple(x2, y2, z2)) / vector_distance(std::make_tuple(x2, y2, z2)), inner_product(std::make_tuple(x, y, z), std::make_tuple(x1, y1, z1)) / vector_distance(std::make_tuple(x1, y1, z1)), inner_product(outer_product(std::make_tuple(x2, y2, z2), std::make_tuple(x1, y1, z1)), std::make_tuple(x, y, z)) / vector_distance(std::make_tuple(x1, y1, z1)) / vector_distance(std::make_tuple(x2, y2, z2)));
+    return std::make_tuple(inner_product(std::make_tuple(x, y, z), std::make_tuple(x2, y2, z2)) / vector_distance(std::make_tuple(x2, y2, z2)), inner_product(std::make_tuple(x, y, z), std::make_tuple(x1, y1, z1)) / vector_distance(std::make_tuple(x1, y1, z1)), - inner_product(outer_product(std::make_tuple(x2, y2, z2), std::make_tuple(x1, y1, z1)), std::make_tuple(x, y, z)) / vector_distance(std::make_tuple(x1, y1, z1)) / vector_distance(std::make_tuple(x2, y2, z2)));
 }
 
 std::tuple<float, float, float> Detection::translatePlanePoint(std::tuple<float, float, float> V){
@@ -504,5 +507,5 @@ std::tuple<float, float, float> Detection::translatePlanePoint(std::tuple<float,
     float x2 = std::get<0>(BoardPosBasedData.at(2)) - std::get<0>(BoardPosBasedData.at(0));
     float y2 = std::get<1>(BoardPosBasedData.at(2)) - std::get<1>(BoardPosBasedData.at(0));
     float z2 = std::get<2>(BoardPosBasedData.at(2)) - std::get<2>(BoardPosBasedData.at(0));
-    return std::make_tuple(inner_product(std::make_tuple(x, y, z), std::make_tuple(x2, y2, z2)) / vector_distance(std::make_tuple(x2, y2, z2)), inner_product(std::make_tuple(x, y, z), std::make_tuple(x1, y1, z1)) / vector_distance(std::make_tuple(x1, y1, z1)), inner_product(outer_product(std::make_tuple(x2, y2, z2), std::make_tuple(x1, y1, z1)), std::make_tuple(x, y, z)) / vector_distance(std::make_tuple(x1, y1, z1)) / vector_distance(std::make_tuple(x2, y2, z2)));
+    return std::make_tuple(inner_product(std::make_tuple(x, y, z), std::make_tuple(x2, y2, z2)) / vector_distance(std::make_tuple(x2, y2, z2)), inner_product(std::make_tuple(x, y, z), std::make_tuple(x1, y1, z1)) / vector_distance(std::make_tuple(x1, y1, z1)), -inner_product(outer_product(std::make_tuple(x2, y2, z2), std::make_tuple(x1, y1, z1)), std::make_tuple(x, y, z)) / vector_distance(std::make_tuple(x1, y1, z1)) / vector_distance(std::make_tuple(x2, y2, z2)));
 }
