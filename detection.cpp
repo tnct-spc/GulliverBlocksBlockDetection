@@ -409,7 +409,7 @@ void Detection::detectBoard(){
             BoardPosBasedData.push_back(translatePixelToP3DPoint((float)frame_pos.at(i).first, (float)frame_pos.at(i).second, intr, depth));
             //std::cout<<std::get<0>(BoardPosBasedData.back())<<" "<<std::get<1>(BoardPosBasedData.back())<<" "<<std::get<2>(BoardPosBasedData.back())<<std::endl;
         }
-        int idx[] = {0, 1, 2, 3, 0};
+        int idx[] = {0, 1, 3, 2, 0};
         float dispersion = 0;
         for(int i = 0;i < 4;i++){
             float d = Distance(BoardPosBasedData.at(idx[i]), BoardPosBasedData.at(idx[i+1]));
@@ -419,12 +419,14 @@ void Detection::detectBoard(){
         dispersion /= 4;
         std::cout<<dispersion<<std::endl;
         if(dispersion < dispersion_thresh){
+            std::cout<<std::endl;
+            is_dispersion = false;
+        }else{
             std::cout<<"Board pos in piexl"<<std::endl;
             for(int i = 0;i < 4;i++){
                 std::cout<<"("<<frame_pos.at(i).first<<" "<<frame_pos.at(i).second<<")";
             }
             std::cout<<std::endl;
-            is_dispersion = false;
         }
     }while(is_dispersion);
     BoardPos.clear();
@@ -507,5 +509,5 @@ std::tuple<float, float, float> Detection::translatePlanePoint(std::tuple<float,
     float x2 = std::get<0>(BoardPosBasedData.at(2)) - std::get<0>(BoardPosBasedData.at(0));
     float y2 = std::get<1>(BoardPosBasedData.at(2)) - std::get<1>(BoardPosBasedData.at(0));
     float z2 = std::get<2>(BoardPosBasedData.at(2)) - std::get<2>(BoardPosBasedData.at(0));
-    return std::make_tuple(inner_product(std::make_tuple(x, y, z), std::make_tuple(x2, y2, z2)) / vector_distance(std::make_tuple(x2, y2, z2)), inner_product(std::make_tuple(x, y, z), std::make_tuple(x1, y1, z1)) / vector_distance(std::make_tuple(x1, y1, z1)), -inner_product(outer_product(std::make_tuple(x2, y2, z2), std::make_tuple(x1, y1, z1)), std::make_tuple(x, y, z)) / vector_distance(std::make_tuple(x1, y1, z1)) / vector_distance(std::make_tuple(x2, y2, z2)));
+    return std::make_tuple(inner_product(std::make_tuple(x, y, z), std::make_tuple(x2, y2, z2)) / vector_distance(std::make_tuple(x2, y2, z2)), inner_product(std::make_tuple(x, y, z), std::make_tuple(x1, y1, z1)) / vector_distance(std::make_tuple(x1, y1, z1)), inner_product(outer_product(std::make_tuple(x2, y2, z2), std::make_tuple(x1, y1, z1)), std::make_tuple(x, y, z)) / vector_distance(std::make_tuple(x1, y1, z1)) / vector_distance(std::make_tuple(x2, y2, z2)));
 }
