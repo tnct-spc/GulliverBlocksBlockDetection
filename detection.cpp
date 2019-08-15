@@ -409,11 +409,10 @@ void Detection::detectBoard(){
             //std::cout<<std::get<0>(BoardPosBasedData.back())<<" "<<std::get<1>(BoardPosBasedData.back())<<" "<<std::get<2>(BoardPosBasedData.back())<<std::endl;
         }
         std::vector<std::pair<float, int>> ins;
-        for(int i = 1;i < 4;i++){
+        for(int i = 0;i < 4;i++){
             ins.push_back(std::make_pair(std::pow(std::get<0>(BoardPosBasedData.at(i)) - std::get<0>(BoardPosBasedData.at(0)), 2) + std::pow(std::get<1>(BoardPosBasedData.at(i)) - std::get<1>(BoardPosBasedData.at(0)), 2 ) + std::pow(std::get<2>(BoardPosBasedData.at(i)) - std::get<2>(BoardPosBasedData.at(0)), 2), i));
         }
         std::vector<std::tuple<float, float, float>> _BoardPosBasedData;
-        _BoardPosBasedData.push_back(BoardPosBasedData.front());
         std::sort(ins.begin(), ins.end());
         for(int i = 0;i < 4;i++){
             _BoardPosBasedData.push_back(BoardPosBasedData.at(ins.at(i).second));
@@ -455,13 +454,17 @@ void Detection::detectBoard(){
         ins.push_back(std::make_pair(std::pow(std::get<0>(BoardPosBasedData.at(i)) - std::get<0>(BoardPosBasedData.at(0)), 2) + std::pow(std::get<1>(BoardPosBasedData.at(i)) - std::get<1>(BoardPosBasedData.at(0)), 2 ) + std::pow(std::get<2>(BoardPosBasedData.at(i)) - std::get<2>(BoardPosBasedData.at(0)), 2), i));
     }
     std::sort(ins.begin(), ins.end());
-    for(int i = 0;i < 4;i++){
+    for(int i = 0;i < 3;i++){
         _BoardPosBasedData.push_back(BoardPosBasedData.at(ins.at(i).second));
     }
-    if(std::get<0>(BoardPosBasedData.at(1)) < std::get<0>(BoardPosBasedData.at(2))){
-        std::swap(BoardPosBasedData.at(1), BoardPosBasedData.at(2));
+    if(std::get<0>(_BoardPosBasedData.at(1)) < std::get<0>(_BoardPosBasedData.at(2))){
+        std::swap(_BoardPosBasedData.at(1), _BoardPosBasedData.at(2));
     }
     BoardPosBasedData = _BoardPosBasedData;
+    for(int i = 0;i < 4;i++){
+        std::cout<<"("<<std::get<0>(BoardPosBasedData.at(i))<<", "<<std::get<1>(BoardPosBasedData.at(i))<<", "<<std::get<2>(BoardPosBasedData.at(i))<<")";
+    }
+    std::cout<<std::endl;
 }
 
 std::tuple<float, float, float> Detection::translatePixelToP3DPoint(float x, float y){
