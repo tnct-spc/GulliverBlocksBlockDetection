@@ -4,28 +4,42 @@ void Communication::postJson(std::string url, std::pair<std::vector<std::tuple<i
   int color_id = 0;
   std::string json = "{\"blocks\":[";
   
-  for (size_t i = 0; i < block_data.first.size(); i++)
-  {
-  json = json + "{\"put\":" + "true" \
-              + ",\"colorID\":" + "\""+ std::to_string(color_id) + "\"" \
-              + ",\"x\":" + std::to_string(std::get<0>(block_data.first.at(i))) \
-              + ",\"y\":" + std::to_string(std::get<1>(block_data.first.at(i))) \
-              + ",\"z\":" + std::to_string(std::get<2>(block_data.first.at(i))) \
-              + "},";
-  }
-
-  for (size_t i = 0; i < block_data.second.size(); i++)
-  {
-  json = json + "{\"put\":" + "false" \
-              + ",\"x\":" + std::to_string(std::get<0>(block_data.second.at(i))) \
-              + ",\"y\":" + std::to_string(std::get<1>(block_data.second.at(i))) \
-              + ",\"z\":" + std::to_string(std::get<2>(block_data.second.at(i))) \
-              + "}";
+  if (!block_data.first.empty())
+  { 
+    for (size_t i = 0; i < block_data.first.size(); i++)
+    {
   
-  if (i + 1 != block_data.second.size())
-  {
-    json += ",";
+      json = json + "{\"put\":" + "true" \
+                  + ",\"colorID\":" + "\""+ std::to_string(color_id) + "\"" \
+                  + ",\"x\":" + std::to_string(std::get<0>(block_data.first.at(i))) \
+                  + ",\"y\":" + std::to_string(std::get<1>(block_data.first.at(i))) \
+                  + ",\"z\":" + std::to_string(std::get<2>(block_data.first.at(i))) \
+                  + "}";
+      
+      if (!(i + 1 == block_data.first.size() && block_data.second.empty()))
+      {
+        json += ",";
+      }
+      
+    }
+
   }
+  if (!block_data.second.empty())
+  {
+  
+    for (size_t i = 0; i < block_data.second.size(); i++)
+    {
+      json = json + "{\"put\":" + "false" \
+                  + ",\"x\":" + std::to_string(std::get<0>(block_data.second.at(i))) \
+                  + ",\"y\":" + std::to_string(std::get<1>(block_data.second.at(i))) \
+                  + ",\"z\":" + std::to_string(std::get<2>(block_data.second.at(i))) \
+                  + "}";
+      
+      if (i + 1 != block_data.second.size())
+      {
+        json += ",";
+      }
+    }
   }
   
   json += "]}";
@@ -33,10 +47,18 @@ void Communication::postJson(std::string url, std::pair<std::vector<std::tuple<i
   
   //サーバーにPOST
   CURL *hnd;
-
   hnd = curl_easy_init();
+  struct curl_slist *headers = NULL;
+
+  headers = curl_slist_append(headers, "Content-Type: application/json;");
+  headers = curl_slist_append(headers, "Accept: application/json;");
+  headers = curl_slist_append(headers, "charsets: utf-8;");
+
+  curl_easy_setopt(hnd, CURLOPT_HTTPHEADER, headers);
+  
   curl_easy_setopt(hnd, CURLOPT_URL, url.c_str());
   curl_easy_setopt(hnd, CURLOPT_POSTFIELDS, json.c_str());
+
   curl_easy_setopt(hnd, CURLOPT_CUSTOMREQUEST, "POST");
 
   curl_easy_perform(hnd);
