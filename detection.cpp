@@ -187,6 +187,9 @@ std::pair<std::vector<std::tuple<int, int, int>>, std::vector<std::tuple<int, in
             average /= BlockHigh;
             int high = std::round(average)-1;
             high = std::max(high, -1);
+            if(high >= 0){
+                std::cout<<high<<" "<<average<<std::endl;
+            }
             while(true){
                 auto itr = field.at(i).at(j).upper_bound(high);
                 if(itr == field.at(i).at(j).end())break;
@@ -409,10 +412,11 @@ void Detection::detectBoard(){
             //std::cout<<std::get<0>(BoardPosBasedData.back())<<" "<<std::get<1>(BoardPosBasedData.back())<<" "<<std::get<2>(BoardPosBasedData.back())<<std::endl;
         }
         std::vector<std::pair<float, int>> ins;
-        for(int i = 0;i < 4;i++){
+        for(int i = 1;i < 4;i++){
             ins.push_back(std::make_pair(std::pow(std::get<0>(BoardPosBasedData.at(i)) - std::get<0>(BoardPosBasedData.at(0)), 2) + std::pow(std::get<1>(BoardPosBasedData.at(i)) - std::get<1>(BoardPosBasedData.at(0)), 2 ) + std::pow(std::get<2>(BoardPosBasedData.at(i)) - std::get<2>(BoardPosBasedData.at(0)), 2), i));
         }
         std::vector<std::tuple<float, float, float>> _BoardPosBasedData;
+        _BoardPosBasedData.push_back(BoardPosBasedData.front());
         std::sort(ins.begin(), ins.end());
         for(int i = 0;i < 4;i++){
             _BoardPosBasedData.push_back(BoardPosBasedData.at(ins.at(i).second));
@@ -421,16 +425,20 @@ void Detection::detectBoard(){
         int idx[] = {0, 1, 2, 3, 0};
         std::swap(BoardPosBasedData.at(2), BoardPosBasedData.at(3));
         float dispersion = 0;
+        float edge_average = 0;
         for(int i = 0;i < 4;i++){
             float d = Distance(BoardPosBasedData.at(idx[i]), BoardPosBasedData.at(idx[i+1]));
             dispersion += std::pow(d - BoardEdgeLen, 2);
+            edge_average += d;
             std::cout<<d<<std::endl;
         }
+        edge_average /= 4;
         dispersion /= 4;
         std::cout<<dispersion<<std::endl;
         if(dispersion < dispersion_thresh){
-            std::cout<<std::endl;
             is_dispersion = false;
+            BoardEdgeLen = edge_average;
+            BlockEdgeLen = BoardEdgeLen / BoardEdgeNum; 
         }else{
             std::cout<<"Board pos in piexl"<<std::endl;
             for(int i = 0;i < 4;i++){
@@ -454,17 +462,13 @@ void Detection::detectBoard(){
         ins.push_back(std::make_pair(std::pow(std::get<0>(BoardPosBasedData.at(i)) - std::get<0>(BoardPosBasedData.at(0)), 2) + std::pow(std::get<1>(BoardPosBasedData.at(i)) - std::get<1>(BoardPosBasedData.at(0)), 2 ) + std::pow(std::get<2>(BoardPosBasedData.at(i)) - std::get<2>(BoardPosBasedData.at(0)), 2), i));
     }
     std::sort(ins.begin(), ins.end());
-    for(int i = 0;i < 3;i++){
+    for(int i = 0;i < 4;i++){
         _BoardPosBasedData.push_back(BoardPosBasedData.at(ins.at(i).second));
     }
-    if(std::get<0>(_BoardPosBasedData.at(1)) < std::get<0>(_BoardPosBasedData.at(2))){
-        std::swap(_BoardPosBasedData.at(1), _BoardPosBasedData.at(2));
+    if(std::get<0>(BoardPosBasedData.at(1)) < std::get<0>(BoardPosBasedData.at(2))){
+        std::swap(BoardPosBasedData.at(1), BoardPosBasedData.at(2));
     }
     BoardPosBasedData = _BoardPosBasedData;
-    for(int i = 0;i < 4;i++){
-        std::cout<<"("<<std::get<0>(BoardPosBasedData.at(i))<<", "<<std::get<1>(BoardPosBasedData.at(i))<<", "<<std::get<2>(BoardPosBasedData.at(i))<<")";
-    }
-    std::cout<<std::endl;
 }
 
 std::tuple<float, float, float> Detection::translatePixelToP3DPoint(float x, float y){
