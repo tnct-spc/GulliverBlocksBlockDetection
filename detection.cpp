@@ -16,8 +16,8 @@ Detection::Detection(){
             float y = std::get<1>(d);
             float z = std::get<2>(d);
             if(0.0 < x && x < BoardEdgeLen && 0.0 < y && y < BoardEdgeLen){
-                if(x / BlockEdgeLen >= 48 || y / BlockEdgeLen >= 48)continue;
-                data.at(x / BlockEdgeLen).at(y / BlockEdgeLen).push_back(z);
+                if(x / BlockEdgeLen >= BoardEdgeNum || y / BlockEdgeLen >= BoardEdgeNum)continue;
+                data.at(std::floor(x / BlockEdgeLen)).at(std::floor(y / BlockEdgeLen)).push_back(z);
             }
         }
     }
@@ -85,8 +85,9 @@ std::pair<std::vector<std::tuple<int, int, int>>, std::vector<std::tuple<int, in
             float y = std::get<1>(d);
             float z = std::get<2>(d);
             if(0.0 < x && x < BoardEdgeLen && 0.0 < y && y < BoardEdgeLen){
-                data.at(x / BlockEdgeLen).at(y / BlockEdgeLen).push_back(z);
-                multiframe_data.at(x / BlockEdgeLen).at(y / BlockEdgeLen).at(i).push_back(z);
+                if(x / BlockEdgeLen >= BoardEdgeNum || y / BlockEdgeLen >= BoardEdgeNum)continue;
+                data.at(std::floor(x / BlockEdgeLen)).at(std::floor(y / BlockEdgeLen)).push_back(z);
+                multiframe_data.at(std::floor(x / BlockEdgeLen)).at(std::floor(y / BlockEdgeLen)).at(i).push_back(z);
             }
         }
     }
@@ -147,7 +148,9 @@ std::pair<std::vector<std::tuple<int, int, int>>, std::vector<std::tuple<int, in
             back_ave = t_average / addcnt;
             front_ave -= based_data.at(i).at(j);
             back_ave -= based_data.at(i).at(j);
-            if(abs(back_ave - front_ave)/BlockHigh >= 2){
+            //前3フレームと後ろ3フレームの平均が2ブロック以上離れていたら切ってみる
+            //他の案として、別々にはずれ値処理をするのではなく、全体ではずれ値処理をしてから前と後ろで平均の差を取るというものがある
+            if(abs(back_ave - front_ave) / BlockHigh >= 2){
                 flag.at(i).at(j) = false;
             }
 
