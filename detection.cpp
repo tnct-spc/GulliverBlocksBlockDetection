@@ -16,6 +16,7 @@ Detection::Detection(){
             float y = std::get<1>(d);
             float z = std::get<2>(d);
             if(0.0 < x && x < BoardEdgeLen && 0.0 < y && y < BoardEdgeLen){
+                if(x / BlockEdgeLen >= 48 || y / BlockEdgeLen >= 48)continue;
                 data.at(x / BlockEdgeLen).at(y / BlockEdgeLen).push_back(z);
             }
         }
@@ -157,7 +158,7 @@ std::pair<std::vector<std::tuple<int, int, int>>, std::vector<std::tuple<int, in
 
     cv::Mat M(960, 960, CV_8UC3, cv::Scalar(0,0,0));
     std::cout<< std::setprecision(3);
-
+    std::vector<float> uku;
     std::vector<std::tuple<int, int, int>> add;
     std::vector<std::tuple<int, int, int>> remove;
     for(int i = 0;i < BoardEdgeNum;i++){
@@ -185,11 +186,9 @@ std::pair<std::vector<std::tuple<int, int, int>>, std::vector<std::tuple<int, in
             average = t_average / addcnt;
             average -= based_data.at(i).at(j);
             average /= BlockHigh;
+            uku.push_back(average);
             int high = std::round(average)-1;
             high = std::max(high, -1);
-            if(high >= 0){
-                std::cout<<high<<" "<<average<<std::endl;
-            }
             while(true){
                 auto itr = field.at(i).at(j).upper_bound(high);
                 if(itr == field.at(i).at(j).end())break;
@@ -201,7 +200,7 @@ std::pair<std::vector<std::tuple<int, int, int>>, std::vector<std::tuple<int, in
                 add.push_back(std::make_tuple(i, j, high));
             }
             // f.push_back(average * BlockHigh);
-             
+            /*
             for(int p = i*20 ; p < 20+i*20 ; p++){
                 cv::Vec3b* ptr = M.ptr<cv::Vec3b>( p );
                 for(int q = j*20 ; q < 20+j*20 ; q++){
@@ -209,11 +208,16 @@ std::pair<std::vector<std::tuple<int, int, int>>, std::vector<std::tuple<int, in
                     //ptr[q] = cv::Vec3b(high *5000+100, high *5000+100, high *5000+100);
                 }
             }
+            */
         }
     }
-
-    cv::imshow("Visualizer", M);
-    int c = cv::waitKey();
+    std::sort(uku.begin(), uku.end());
+    std::reverse(uku.begin(), uku.end());
+    for(int i = 0;i < 10;i++){
+        std::cout<<i<<" : "<<uku.at(i)<<std::endl;
+    }
+  //  cv::imshow("Visualizer", M);
+  //  int c = cv::waitKey();
     return std::make_pair(add, remove);
 }
 
@@ -412,18 +416,16 @@ void Detection::detectBoard(){
             //std::cout<<std::get<0>(BoardPosBasedData.back())<<" "<<std::get<1>(BoardPosBasedData.back())<<" "<<std::get<2>(BoardPosBasedData.back())<<std::endl;
         }
         std::vector<std::pair<float, int>> ins;
-        for(int i = 1;i < 4;i++){
-            ins.push_back(std::make_pair(std::pow(std::get<0>(BoardPosBasedData.at(i)) - std::get<0>(BoardPosBasedData.at(0)), 2) + std::pow(std::get<1>(BoardPosBasedData.at(i)) - std::get<1>(BoardPosBasedData.at(0)), 2 ) + std::pow(std::get<2>(BoardPosBasedData.at(i)) - std::get<2>(BoardPosBasedData.at(0)), 2), i));
+        for(int i = 0;i < 4;i++){
+            ins.push_back(std::make_pair(Distance(BoardPosBasedData.at(i), BoardPosBasedData.at(0)), i));
         }
         std::vector<std::tuple<float, float, float>> _BoardPosBasedData;
-        _BoardPosBasedData.push_back(BoardPosBasedData.front());
         std::sort(ins.begin(), ins.end());
         for(int i = 0;i < 4;i++){
             _BoardPosBasedData.push_back(BoardPosBasedData.at(ins.at(i).second));
         }
         BoardPosBasedData = _BoardPosBasedData;
-        int idx[] = {0, 1, 2, 3, 0};
-        std::swap(BoardPosBasedData.at(2), BoardPosBasedData.at(3));
+        int idx[] = {0, 1, 3, 2, 0};
         float dispersion = 0;
         float edge_average = 0;
         for(int i = 0;i < 4;i++){
@@ -450,23 +452,22 @@ void Detection::detectBoard(){
 
     std::vector<std::pair<float, int>> ins;
     for(int i = 0;i < 4;i++){
-        ins.push_back(std::make_pair(std::pow(std::get<0>(BoardPosBasedData.at(i)) - 0, 2) + std::pow(std::get<1>(BoardPosBasedData.at(i)) - 0, 2 ) + std::pow(std::get<2>(BoardPosBasedData.at(i)) - 0, 2), i));
+        ins.push_back(std::make_pair(Distance(BoardPosBasedData.at(i), std::make_tuple(0, 0, 0)), i));
     }
     auto q = *std::min_element(ins.begin(), ins.end());
     int _i = q.second;
     std::swap(BoardPosBasedData.at(_i), BoardPosBasedData.at(0));
     std::vector<std::tuple<float, float, float>> _BoardPosBasedData;
-    _BoardPosBasedData.push_back(BoardPosBasedData.front());
     ins.clear();
-    for(int i = 1;i < 4;i++){
-        ins.push_back(std::make_pair(std::pow(std::get<0>(BoardPosBasedData.at(i)) - std::get<0>(BoardPosBasedData.at(0)), 2) + std::pow(std::get<1>(BoardPosBasedData.at(i)) - std::get<1>(BoardPosBasedData.at(0)), 2 ) + std::pow(std::get<2>(BoardPosBasedData.at(i)) - std::get<2>(BoardPosBasedData.at(0)), 2), i));
+    for(int i = 0;i < 4;i++){
+        ins.push_back(std::make_pair(Distance(BoardPosBasedData.at(i), BoardPosBasedData.at(0)), i));
     }
     std::sort(ins.begin(), ins.end());
     for(int i = 0;i < 4;i++){
         _BoardPosBasedData.push_back(BoardPosBasedData.at(ins.at(i).second));
     }
-    if(std::get<0>(BoardPosBasedData.at(1)) < std::get<0>(BoardPosBasedData.at(2))){
-        std::swap(BoardPosBasedData.at(1), BoardPosBasedData.at(2));
+    if(std::get<0>(_BoardPosBasedData.at(1)) < std::get<0>(_BoardPosBasedData.at(2))){
+        std::swap(_BoardPosBasedData.at(1), _BoardPosBasedData.at(2));
     }
     BoardPosBasedData = _BoardPosBasedData;
 }

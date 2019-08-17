@@ -24,7 +24,7 @@ class Detection{
 private:
     std::vector<std::vector<double>> data;
     float BoardEdgeLen = 0.385; //Board Edge Length
-    float BlockEdgeLen = 0.385/48.0;
+    float BlockEdgeLen = 0.385 / 48.0;
     const float dispersion_thresh = 0.0005;
     const int BoardEdgeNum = 48;
     const float BlockHigh = 0.009;

@@ -19,16 +19,18 @@ void Manager::RunSingleDetection(){
             now_blocks.insert(std::make_tuple(std::get<0>(detect_info.first.at(i)), std::get<1>(detect_info.first.at(i)), std::get<2>(detect_info.first.at(i))));
         }
         //std::cout<<std::endl;
-        if(detect_info.first.size() != 0)std::cout<<detect_info.first.size()<<": Added"<<std::endl;
+        std::cout<<detect_info.first.size()<<": Added"<<std::endl;
         for(int i = 0;i < detect_info.second.size();i++){
             std::cout<<std::get<0>(detect_info.second.at(i))<<" "<<std::get<1>(detect_info.second.at(i))<<" "<<std::get<2>(detect_info.second.at(i))<<std::endl;
+            now_blocks.erase(std::make_tuple(std::get<0>(detect_info.second.at(i)), std::get<1>(detect_info.second.at(i)), std::get<2>(detect_info.second.at(i)) + 1));
         }
      //   std::cout<<std::endl;
-        if(detect_info.second.size() != 0)std::cout<<detect_info.second.size()<<": Deleted"<<std::endl;
+        std::cout<<detect_info.second.size()<<": Deleted"<<std::endl;
        // for(auto a : now_blocks){
        //     std::cout<<std::get<0>(a)<<" "<<std::get<1>(a)<<" "<<std::get<2>(a)<<std::endl;
        // }
        // std::cout<<std::endl;
+        std::cout<<"now : "<<now_blocks.size()<<std::endl;
         std::cout<<cnt<<std::endl;
         cnt++;
     }
