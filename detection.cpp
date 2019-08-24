@@ -495,7 +495,9 @@ std::tuple<float, float, float> Detection::translatePixelToP3DPoint(float x, flo
     rs2_intrinsics intr = pframes.get_profile().as<rs2::video_stream_profile>().get_intrinsics(); // Calibration data
     float pixel[2] = {x, y};
     float qpoint[3];
-    rs2_deproject_pixel_to_point(qpoint, &intr, pixel, depth.get_distance(pixel[0], pixel[1]));
+
+    rs2_error * e = nullptr;
+    rs2_deproject_pixel_to_point(qpoint, &intr, pixel, rs2_depth_frame_get_distance(depth.get(), pixel[0], pixel[1], &e));
     
     return std::make_tuple(qpoint[0], qpoint[1], qpoint[2]);
 }
@@ -503,7 +505,9 @@ std::tuple<float, float, float> Detection::translatePixelToP3DPoint(float x, flo
 std::tuple<float, float, float> Detection::translatePixelToP3DPoint(float x, float y, rs2_intrinsics& intr, rs2::depth_frame& depth){
     float pixel[2] = {x, y};
     float qpoint[3];
-    rs2_deproject_pixel_to_point(qpoint, &intr, pixel, depth.get_distance(pixel[0], pixel[1]));
+
+    rs2_error * e = nullptr;
+    rs2_deproject_pixel_to_point(qpoint, &intr, pixel, rs2_depth_frame_get_distance(depth.get(), pixel[0], pixel[1], &e));
     
     return std::make_tuple(qpoint[0], qpoint[1], qpoint[2]);
 }
