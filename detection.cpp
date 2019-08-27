@@ -17,7 +17,7 @@ Detection::Detection(){
             float z = std::get<2>(d);
             if(0.0 < x && x < BoardEdgeLen && 0.0 < y && y < BoardEdgeLen){
                 if(x / BlockEdgeLen >= BoardEdgeNum || y / BlockEdgeLen >= BoardEdgeNum || y / BlockEdgeLen < 0 || x / BlockEdgeLen < 0){
-                    std::cerr<<"detection.cpp コンストラクタ内で配列外参照だよ！！"<< x / BoardEdgeLen << " "<<y / BoardEdgeLen <<std::endl;
+                    std::cerr<<"detection.cpp コンストラクタ内で配列外参照だよ！！"<< std::floor(x / BoardEdgeLen) << " "<<std::floor(y / BoardEdgeLen)<<std::endl;
                     std::abort();
                 }
                 if(!(0.1 < x / BlockEdgeLen - std::floor(x / BlockEdgeLen) && x / BlockEdgeLen - std::floor(x / BlockEdgeLen) < 0.9))continue; //あまり境界に近くないほうがよい
@@ -94,8 +94,8 @@ std::pair<std::vector<std::tuple<int, int, int>>, std::vector<std::tuple<int, in
                     std::cerr<<"detection.cpp getDepth関数内で配列外参照だよ！！"<< x / BoardEdgeLen << " "<<y / BoardEdgeLen <<std::endl;
                     std::abort();
                 }
-                if(!(0.1 < x / BlockEdgeLen - std::floor(x / BlockEdgeLen) && x / BlockEdgeLen - std::floor(x / BlockEdgeLen) < 0.9))continue; //あまり境界に近くないほうがよい
-                if(!(0.1 < y / BlockEdgeLen - std::floor(y / BlockEdgeLen) && y / BlockEdgeLen - std::floor(y / BlockEdgeLen) < 0.9))continue; //あまり境界に近くないほうがよい
+                if(!(0.2 < x / BlockEdgeLen - std::floor(x / BlockEdgeLen) && x / BlockEdgeLen - std::floor(x / BlockEdgeLen) < 0.8))continue; //あまり境界に近くないほうがよい
+                if(!(0.2 < y / BlockEdgeLen - std::floor(y / BlockEdgeLen) && y / BlockEdgeLen - std::floor(y / BlockEdgeLen) < 0.8))continue; //あまり境界に近くないほうがよい
                 data.at(std::floor(x / BlockEdgeLen)).at(std::floor(y / BlockEdgeLen)).push_back(z);
                 multiframe_data.at(std::floor(x / BlockEdgeLen)).at(std::floor(y / BlockEdgeLen)).at(i).push_back(z);
             }
@@ -457,7 +457,7 @@ void Detection::detectBoard(){
         }else{
             std::cout<<"Board pos in piexl"<<std::endl;
             for(int i = 0;i < 4;i++){
-                std::cout<<"("<<frame_pos.at(i).first<<" "<<frame_pos.at(i).second<<")";
+                std::cout<<"("<<std::get<0>(BoardPosBasedData[i])<<" "<<std::get<1>(BoardPosBasedData[i])<<" "<<std::get<2>(BoardPosBasedData[i])<<")";
             }
             std::cout<<std::endl;
         }
