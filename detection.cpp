@@ -370,13 +370,14 @@ void Detection::detectBoard(){
             drawSquares(image, squares);
         }while(squares.empty());
 
-    
+        std::vector<std::pair<int, int>> frame_pos(4);
+        //とりあえず面積の中央値の枠を採用することにする
+        /*
         std::vector<std::pair<int, int>> _frame_pos;
         for(auto a : squares){
             for(auto b : a)_frame_pos.push_back(std::make_pair(b.x, b.y));
         }
-        std::sort(_frame_pos.begin(), _frame_pos.end());
-        std::vector<std::pair<int, int>> frame_pos = { std::make_pair(0, 0), std::make_pair(0, 0), std::make_pair(0, 0), std::make_pair(0, 0)};
+        std::sort(_frame_pos.begin(), _frame_pos.end(),[](auto a, auto b){ std::pow(a.first, 2) + std::pow(a.second, 2) < std::pow(b.first, 2) + std::pow(b.second, 2); });
         for(int i = 0;i < _frame_pos.size();i++){
             if(i < _frame_pos.size()/4){
                 frame_pos.at(0).first += _frame_pos.at(i).first;
@@ -406,12 +407,30 @@ void Detection::detectBoard(){
         frame_pos.at(3).second /= _frame_pos.size()/4;
 
         std::sort(frame_pos.begin(), frame_pos.end());
-    
-  //      std::cout<<"Board pos in piexl"<<std::endl;
-  //      for(int i = 0;i < 4;i++){
-    //        std::cout<<"("<<frame_pos.at(i).first<<" "<<frame_pos.at(i).second<<")";
-    //    }
-    //    std::cout<<std::endl;
+        */
+        std::vector<std::pair<float, int>> frame_list;
+        int qwerty = 0;
+        for(auto a : squares){
+            double ans = 0;
+            for(int i = 0;i < 4;i++){
+                ans += ((a.at(i).x - a.at((i+1)%4).x) * (a.at(i).y + a.at((i+1)%4).y));
+            }
+            ans = std::abs(ans) / 2;
+            frame_list.push_back({ans, qwerty});
+            qwerty++;
+        }
+        sort(frame_list.begin(), frame_list.end());
+        for(int i = 0;i < 4;i++){
+            frame_pos.push_back({squares.at(frame_list.at(frame_list.size()/2).second).at(i).x, squares.at(frame_list.at(frame_list.size()/2).second).at(i).y});
+        }
+
+        std::sort(frame_pos.begin(), frame_pos.end());
+        std::cout<<"Board pos in piexl"<<std::endl;
+        for(int i = 0;i < 4;i++){
+            std::cout<<"("<<frame_pos.at(i).first<<" "<<frame_pos.at(i).second<<")";
+        }
+        std::cout<<std::endl;
+        std::sort(frame_pos.begin(), frame_pos.end());
 
         rs2::frameset pframes = pipe.wait_for_frames();
         rs2::align align(RS2_STREAM_COLOR);
