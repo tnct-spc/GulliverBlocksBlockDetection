@@ -1,16 +1,22 @@
 #include "detection.h"
 
 Detection::Detection(){
+    cpu_num = std::thread::hardware_concurrency();
+
+    threads.resize(cpu_num);
+
+
     cfg.enable_stream(RS2_STREAM_COLOR, 1280, 720, RS2_FORMAT_RGB8, 30);
     cfg.enable_stream(RS2_STREAM_DEPTH, 1280, 720, RS2_FORMAT_Z16, 30);
-    pipe.start(cfg);
+    profile = pipe.start(cfg);
+    dev = profile.get_device();
     detectBoard();
     based_data = std::vector<std::vector<float>>(BoardEdgeNum, std::vector<float>(BoardEdgeNum, 0));
     std::vector<std::vector<std::vector<float>>> data = std::vector<std::vector<std::vector<float>>>(BoardEdgeNum, std::vector<std::vector<float>>(BoardEdgeNum));
     field = std::vector<std::vector<std::set<int>>>(BoardEdgeNum, std::vector<std::set<int>>(BoardEdgeNum));
 
     for(int i = 0;i < 3;i++){
-        std::vector<std::tuple<float, float, float>> depth_data = getDepth();
+        std::vector<std::tuple<float, float, float>> depth_data = getDepthFaster();
         for(auto d : depth_data){
             float x = std::get<0>(d);
             float y = std::get<1>(d);
@@ -77,6 +83,41 @@ std::vector<std::tuple<float, float, float>> Detection::getDepth(){
     return depth_data;
 }
 
+std::vector<std::tuple<float, float, float>> Detection::getDepthFaster(){
+    std::cout<<"getDepthFaster"<<std::endl;
+    float width = 1280;
+    float height = 720;
+    std::vector<std::tuple<float, float, float>> depth_data;
+    rs2::frameset frames = pipe.wait_for_frames();
+    rs2::align align(RS2_STREAM_COLOR);
+    auto aligned_frames = align.process(frames);
+    rs2::video_frame color_frame = aligned_frames.first(RS2_STREAM_COLOR);
+    rs2::depth_frame depth = aligned_frames.get_depth_frame();
+
+    rs2::sensor sensor = dev.query_sensors()[0];
+    rs2::depth_sensor depth_sensor = sensor.as<rs2::depth_sensor>();
+
+    const double scale = depth_sensor.get_depth_scale();
+
+    auto z_pixels = reinterpret_cast<const uint16_t*>(depth.get_data());
+
+    rs2_intrinsics intr = frames.get_profile().as<rs2::video_stream_profile>().get_intrinsics();
+
+    for(int x = 1;x <= width;x++){
+        for(int y = 1;y <= height;y++){
+            float pixel[2] = {x, y};
+            float qpoint[3];
+            int idx = (x-1) + (y-1) * width;
+            auto z_distance = (int)(z_pixels[idx]) * scale;
+            rs2_deproject_pixel_to_point(qpoint, &intr, pixel, z_distance);
+
+            depth_data.emplace_back(translatePlanePoint(qpoint[0], qpoint[1], qpoint[2]));
+        }
+    }
+    std::cout<<"finish Depth Data"<<std::endl;
+    return depth_data;
+}
+
 std::pair<std::vector<std::tuple<int, int, int>>, std::vector<std::tuple<int, int, int>>> Detection::singleDetect(){
     int t_num = 6;
     std::vector<std::vector<std::vector<std::vector<float>>>> multiframe_data = std::vector<std::vector<std::vector<std::vector<float>>>>(BoardEdgeNum, std::vector<std::vector<std::vector<float>>>(BoardEdgeNum, std::vector<std::vector<float>>(t_num, std::vector<float>({}))));
@@ -84,7 +125,7 @@ std::pair<std::vector<std::tuple<int, int, int>>, std::vector<std::tuple<int, in
     std::vector<std::vector<std::vector<float>>> data = std::vector<std::vector<std::vector<float>>>(BoardEdgeNum, std::vector<std::vector<float>>(BoardEdgeNum, std::vector<float>({})));
     std::cout<<"getting data now"<<std::endl;
     for(int i = 0;i < t_num;i++){
-        std::vector<std::tuple<float, float, float>> depth_data = getDepth();
+        std::vector<std::tuple<float, float, float>> depth_data = getDepthFaster();
         for(auto d : depth_data){
             float x = std::get<0>(d);
             float y = std::get<1>(d);
@@ -96,13 +137,14 @@ std::pair<std::vector<std::tuple<int, int, int>>, std::vector<std::tuple<int, in
                 }
                 if(!(0.2 < x / BlockEdgeLen - std::floor(x / BlockEdgeLen) && x / BlockEdgeLen - std::floor(x / BlockEdgeLen) < 0.8))continue; //あまり境界に近くないほうがよい
                 if(!(0.2 < y / BlockEdgeLen - std::floor(y / BlockEdgeLen) && y / BlockEdgeLen - std::floor(y / BlockEdgeLen) < 0.8))continue; //あまり境界に近くないほうがよい
-                data.at(std::floor(x / BlockEdgeLen)).at(std::floor(y / BlockEdgeLen)).push_back(z);
-                multiframe_data.at(std::floor(x / BlockEdgeLen)).at(std::floor(y / BlockEdgeLen)).at(i).push_back(z);
+                data.at(std::floor(x / BlockEdgeLen)).at(std::floor(y / BlockEdgeLen)).emplace_back(z);
+                multiframe_data.at(std::floor(x / BlockEdgeLen)).at(std::floor(y / BlockEdgeLen)).at(i).emplace_back(z);
             }
         }
     }
     std::cout<<"finish get data"<<std::endl;
 
+    
     for(int i = 0;i < BoardEdgeNum;i++){
         for(int j = 0;j < BoardEdgeNum;j++){
             std::vector<float> front;
@@ -162,6 +204,7 @@ std::pair<std::vector<std::tuple<int, int, int>>, std::vector<std::tuple<int, in
             //他の案として、別々にはずれ値処理をするのではなく、全体ではずれ値処理をしてから前と後ろで平均の差を取るというものがある
             if(abs(back_ave - front_ave) / BlockHigh >= 2){
                 flag.at(i).at(j) = false;
+                std::cout<<"disable detect pos("<<i<<","<<j<<")"<<std::endl;
             }
 
         }
@@ -169,8 +212,8 @@ std::pair<std::vector<std::tuple<int, int, int>>, std::vector<std::tuple<int, in
     
     
 
-    cv::Mat M(960, 960, CV_8UC3, cv::Scalar(0,0,0));
-    std::cout<< std::setprecision(3);
+    //cv::Mat M(960, 960, CV_8UC3, cv::Scalar(0,0,0));
+    //std::cout<< std::setprecision(3);
     std::vector<float> uku;
     std::vector<std::tuple<int, int, int>> add;
     std::vector<std::tuple<int, int, int>> remove;
@@ -213,15 +256,20 @@ std::pair<std::vector<std::tuple<int, int, int>>, std::vector<std::tuple<int, in
                 add.push_back(std::make_tuple(i, j, high));
             }
             // f.push_back(average * BlockHigh);
+            if(std::isnan(average)){
+                std::cout<<"nanananana"<<std::endl;
+            }
             /*
             for(int p = i*20 ; p < 20+i*20 ; p++){
                 cv::Vec3b* ptr = M.ptr<cv::Vec3b>( p );
                 for(int q = j*20 ; q < 20+j*20 ; q++){
+
                     ptr[q] = cv::Vec3b(average * BlockHigh *5000+100, average * BlockHigh *5000+100, average * BlockHigh *5000+100);
                     //ptr[q] = cv::Vec3b(high *5000+100, high *5000+100, high *5000+100);
                 }
             }
             */
+            
         }
     }
     std::sort(uku.begin(), uku.end());
@@ -229,8 +277,8 @@ std::pair<std::vector<std::tuple<int, int, int>>, std::vector<std::tuple<int, in
     for(int i = 0;i < 10;i++){
         std::cout<<i<<" : "<<uku.at(i)<<std::endl;
     }
-  //  cv::imshow("Visualizer", M);
-  //  int c = cv::waitKey();
+    //cv::imshow("Visualizer", M);
+    //int c = cv::waitKey();
     return std::make_pair(add, remove);
 }
 
@@ -370,7 +418,7 @@ void Detection::detectBoard(){
             drawSquares(image, squares);
         }while(squares.empty());
 
-        std::vector<std::pair<int, int>> frame_pos(4);
+        std::vector<std::pair<int, int>> frame_pos;
         //とりあえず面積の中央値の枠を採用することにする
         /*
         std::vector<std::pair<int, int>> _frame_pos;
@@ -408,7 +456,7 @@ void Detection::detectBoard(){
 
         std::sort(frame_pos.begin(), frame_pos.end());
         */
-        std::vector<std::pair<float, int>> frame_list;
+        std::vector<std::pair<double, int>> frame_list;
         int qwerty = 0;
         for(auto a : squares){
             double ans = 0;
@@ -418,10 +466,13 @@ void Detection::detectBoard(){
             ans = std::abs(ans) / 2;
             frame_list.push_back({ans, qwerty});
             qwerty++;
+            std::cout<<ans<<std::endl;
         }
         sort(frame_list.begin(), frame_list.end());
+        int frame_idx = std::upper_bound(frame_list.begin(), frame_list.end(), std::make_pair(1.0*1e5, 0)) - frame_list.begin();
+        if(frame_idx == frame_list.size())continue;
         for(int i = 0;i < 4;i++){
-            frame_pos.push_back({squares.at(frame_list.at(frame_list.size()/2).second).at(i).x, squares.at(frame_list.at(frame_list.size()/2).second).at(i).y});
+            frame_pos.push_back({squares.at(frame_list.at(frame_idx).second).at(i).x, squares.at(frame_list.at(frame_idx).second).at(i).y});
         }
 
         std::sort(frame_pos.begin(), frame_pos.end());
