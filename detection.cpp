@@ -1,15 +1,11 @@
 #include "detection.h"
 
 Detection::Detection(){
-    cpu_num = std::thread::hardware_concurrency();
 
-    threads.resize(cpu_num);
 
 
     cfg.enable_stream(RS2_STREAM_COLOR, 1280, 720, RS2_FORMAT_RGB8, 30);
     cfg.enable_stream(RS2_STREAM_DEPTH, 1280, 720, RS2_FORMAT_Z16, 30);
-    profile = pipe.start(cfg);
-    dev = profile.get_device();
     detectBoard();
     based_data = std::vector<std::vector<float>>(BoardEdgeNum, std::vector<float>(BoardEdgeNum, 0));
     std::vector<std::vector<std::vector<float>>> data = std::vector<std::vector<std::vector<float>>>(BoardEdgeNum, std::vector<std::vector<float>>(BoardEdgeNum));

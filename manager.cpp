@@ -27,7 +27,8 @@ void Manager::RunSingleDetection(){
             std::cout<<std::get<0>(detect_info.second.at(i))<<" "<<std::get<1>(detect_info.second.at(i))<<" "<<std::get<2>(detect_info.second.at(i))<<std::endl;
             //now_blocks.erase(std::make_tuple(std::get<0>(detect_info.second.at(i)), std::get<1>(detect_info.second.at(i)), std::get<2>(detect_info.second.at(i)) + 1));
         }
-     //   std::cout<<std::endl;
+     //   std::cout<<std::endl
+        Poster.postJson("", detect_info);
         std::cout<<detect_info.second.size()<<": Deleted"<<std::endl;
        // for(auto a : now_blocks){
        //     std::cout<<std::get<0>(a)<<" "<<std::get<1>(a)<<" "<<std::get<2>(a)<<std::endl;
