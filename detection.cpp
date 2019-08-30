@@ -12,7 +12,7 @@ Detection::Detection(){
     field = std::vector<std::vector<std::set<int>>>(BoardEdgeNum, std::vector<std::set<int>>(BoardEdgeNum));
 
     for(int i = 0;i < 3;i++){
-        std::vector<std::tuple<float, float, float>> depth_data = getDepthAndColor();
+        std::vector<std::tuple<float, float, float>> depth_data = getDepth();
         for(auto d : depth_data){
             float x = std::get<0>(d);
             float y = std::get<1>(d);
@@ -58,7 +58,7 @@ Detection::Detection(){
 }
 
 std::vector<std::tuple<float, float, float>> Detection::getDepth(){
-
+    std::cout<<"get Depth"<<std::endl;
     float width = 1280;
     float height = 720;
     std::vector<std::tuple<float, float, float>> depth_data;
@@ -75,7 +75,7 @@ std::vector<std::tuple<float, float, float>> Detection::getDepth(){
             depth_data.push_back(translatePlanePoint(translatePixelToP3DPoint(x, y, intr, depth)));
         }
     }
-    
+    std::cout<<"finish get Depth"<<std::endl;
     return depth_data;
 }
 
