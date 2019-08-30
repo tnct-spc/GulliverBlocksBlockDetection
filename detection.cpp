@@ -12,7 +12,7 @@ Detection::Detection(){
     field = std::vector<std::vector<std::set<int>>>(BoardEdgeNum, std::vector<std::set<int>>(BoardEdgeNum));
 
     for(int i = 0;i < 3;i++){
-        std::vector<std::tuple<float, float, float>> depth_data = getDepthFaster();
+        std::vector<std::tuple<float, float, float>> depth_data = getDepthAndColor();
         for(auto d : depth_data){
             float x = std::get<0>(d);
             float y = std::get<1>(d);
@@ -79,11 +79,43 @@ std::vector<std::tuple<float, float, float>> Detection::getDepth(){
     return depth_data;
 }
 
-std::vector<std::tuple<float, float, float>> Detection::getDepthFaster(){
+std::vector<std::pair<std::tuple<float, float, float>, std::tuple<int, int, int>>> Detection::getDepthAndColor(){
+
+    auto frame_to_mat = [](const rs2::frame& f){
+        auto vf = f.as<rs2::video_frame>();
+        const int w = vf.get_width();
+        const int h = vf.get_height();
+
+        if (f.get_profile().format() == RS2_FORMAT_BGR8)
+        {
+            return cv::Mat(cv::Size(w, h), CV_8UC3, (void*)f.get_data(), cv::Mat::AUTO_STEP);
+        }
+        else if (f.get_profile().format() == RS2_FORMAT_RGB8)
+        {
+            auto r = cv::Mat(cv::Size(w, h), CV_8UC3, (void*)f.get_data(), cv::Mat::AUTO_STEP);
+            cv::cvtColor(r, r, cv::COLOR_RGB2BGR);
+            return r;
+        }
+        else if (f.get_profile().format() == RS2_FORMAT_Z16)
+        {
+            return cv::Mat(cv::Size(w, h), CV_16UC1, (void*)f.get_data(), cv::Mat::AUTO_STEP);
+        }
+        else if (f.get_profile().format() == RS2_FORMAT_Y8)
+        {
+            return cv::Mat(cv::Size(w, h), CV_8UC1, (void*)f.get_data(), cv::Mat::AUTO_STEP);
+        }
+        else if (f.get_profile().format() == RS2_FORMAT_DISPARITY32)
+        {
+            return cv::Mat(cv::Size(w, h), CV_32FC1, (void*)f.get_data(), cv::Mat::AUTO_STEP);
+        }
+
+        throw std::runtime_error("Frame format is not supported yet!");
+    };
+
     std::cout<<"getDepthFaster"<<std::endl;
     float width = 1280;
     float height = 720;
-    std::vector<std::tuple<float, float, float>> depth_data;
+    std::vector<std::pair<std::tuple<float, float, float>, std::tuple<int, int, int>>> data;
     rs2::frameset frames = pipe.wait_for_frames();
     rs2::align align(RS2_STREAM_COLOR);
     auto aligned_frames = align.process(frames);
@@ -99,29 +131,35 @@ std::vector<std::tuple<float, float, float>> Detection::getDepthFaster(){
 
     rs2_intrinsics intr = frames.get_profile().as<rs2::video_stream_profile>().get_intrinsics();
 
-    for(int x = 1;x <= width;x++){
-        for(int y = 1;y <= height;y++){
+    cv::Mat image = frame_to_mat(color_frame);
+
+    for(int y = 1;y <= height;y++){
+        cv::Vec3b* ptr = image.ptr<cv::Vec3b>( y );
+        for(int x = 1;x <= width ; x++){
             float pixel[2] = {x, y};
             float qpoint[3];
             int idx = (x-1) + (y-1) * width;
             auto z_distance = (int)(z_pixels[idx]) * scale;
             rs2_deproject_pixel_to_point(qpoint, &intr, pixel, z_distance);
 
-            depth_data.emplace_back(translatePlanePoint(qpoint[0], qpoint[1], qpoint[2]));
+            cv::Vec3b bgr = ptr[x];
+
+            data.emplace_back(std::make_pair(translatePlanePoint(qpoint[0], qpoint[1], qpoint[2]), std::make_tuple(bgr[2], bgr[1], bgr[0]))); //bgr to rgb
         }
     }
     std::cout<<"finish Depth Data"<<std::endl;
-    return depth_data;
+    return data;
 }
 
 std::pair<std::vector<std::tuple<int, int, int>>, std::vector<std::tuple<int, int, int>>> Detection::singleDetect(){
+
     int t_num = 6;
     std::vector<std::vector<std::vector<std::vector<float>>>> multiframe_data = std::vector<std::vector<std::vector<std::vector<float>>>>(BoardEdgeNum, std::vector<std::vector<std::vector<float>>>(BoardEdgeNum, std::vector<std::vector<float>>(t_num, std::vector<float>({}))));
     std::vector<std::vector<bool>> flag(BoardEdgeNum, std::vector<bool>(BoardEdgeNum, true));
     std::vector<std::vector<std::vector<float>>> data = std::vector<std::vector<std::vector<float>>>(BoardEdgeNum, std::vector<std::vector<float>>(BoardEdgeNum, std::vector<float>({})));
     std::cout<<"getting data now"<<std::endl;
     for(int i = 0;i < t_num;i++){
-        std::vector<std::tuple<float, float, float>> depth_data = getDepthFaster();
+        std::vector<std::tuple<float, float, float>> depth_data = getDepthAndColor();
         for(auto d : depth_data){
             float x = std::get<0>(d);
             float y = std::get<1>(d);
