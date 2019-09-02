@@ -9,5 +9,6 @@ class Manager{
 public:
     Manager();
     void RunSingleDetection();
+    void RunTestCurl();
     Communication Poster;
 };

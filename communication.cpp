@@ -44,6 +44,7 @@ void Communication::postJson(std::string url, std::pair<std::vector<std::tuple<i
   
   json += "]}";
 
+  std::cout<<json<<std::endl;
   
   //サーバーにPOST
   CURL *hnd;

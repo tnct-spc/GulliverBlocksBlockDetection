@@ -3,4 +3,5 @@
 int main(){
     Manager manager;
     manager.RunSingleDetection();
+    //manager.RunTestCurl();
 }

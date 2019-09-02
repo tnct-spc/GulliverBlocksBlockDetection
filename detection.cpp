@@ -1,11 +1,18 @@
 #include "detection.h"
 
 Detection::Detection(){
+    cpu_num = std::thread::hardware_concurrency();
 
-
+    threads.resize(cpu_num);    
 
     cfg.enable_stream(RS2_STREAM_COLOR, 1280, 720, RS2_FORMAT_RGB8, 30);
     cfg.enable_stream(RS2_STREAM_DEPTH, 1280, 720, RS2_FORMAT_Z16, 30);
+
+    std::cout<<"APA"<<std::endl;
+
+    profile = pipe.start(cfg);
+    dev = profile.get_device();
+
     detectBoard();
     based_data = std::vector<std::vector<float>>(BoardEdgeNum, std::vector<float>(BoardEdgeNum, 0));
     std::vector<std::vector<std::vector<float>>> data = std::vector<std::vector<std::vector<float>>>(BoardEdgeNum, std::vector<std::vector<float>>(BoardEdgeNum));
@@ -131,10 +138,12 @@ std::vector<std::pair<std::tuple<float, float, float>, std::tuple<int, int, int>
 
     rs2_intrinsics intr = frames.get_profile().as<rs2::video_stream_profile>().get_intrinsics();
 
+    std::cout<<"mid"<<std::endl;
+
     cv::Mat image = frame_to_mat(color_frame);
 
     for(int y = 1;y <= height;y++){
-        cv::Vec3b* ptr = image.ptr<cv::Vec3b>( y );
+        cv::Vec3b* ptr = image.ptr<cv::Vec3b>( y-1 );
         for(int x = 1;x <= width ; x++){
             float pixel[2] = {x, y};
             float qpoint[3];
@@ -142,12 +151,11 @@ std::vector<std::pair<std::tuple<float, float, float>, std::tuple<int, int, int>
             auto z_distance = (int)(z_pixels[idx]) * scale;
             rs2_deproject_pixel_to_point(qpoint, &intr, pixel, z_distance);
 
-            cv::Vec3b bgr = ptr[x];
+            cv::Vec3b bgr = ptr[x-1];
 
             data.emplace_back(std::make_pair(translatePlanePoint(qpoint[0], qpoint[1], qpoint[2]), std::make_tuple(bgr[2], bgr[1], bgr[0]))); //bgr to rgb
         }
     }
-    std::cout<<"finish Depth Data"<<std::endl;
     return data;
 }
 
@@ -159,11 +167,11 @@ std::pair<std::vector<std::tuple<int, int, int>>, std::vector<std::tuple<int, in
     std::vector<std::vector<std::vector<float>>> data = std::vector<std::vector<std::vector<float>>>(BoardEdgeNum, std::vector<std::vector<float>>(BoardEdgeNum, std::vector<float>({})));
     std::cout<<"getting data now"<<std::endl;
     for(int i = 0;i < t_num;i++){
-        std::vector<std::tuple<float, float, float>> depth_data = getDepthAndColor();
+        std::vector<std::pair<std::tuple<float, float, float>, std::tuple<int, int, int>>> depth_data = getDepthAndColor();
         for(auto d : depth_data){
-            float x = std::get<0>(d);
-            float y = std::get<1>(d);
-            float z = std::get<2>(d);
+            float x = std::get<0>(d.first);
+            float y = std::get<1>(d.first);
+            float z = std::get<2>(d.first);
             if(0.0 < x && x < BoardEdgeLen && 0.0 < y && y < BoardEdgeLen){
                 if(x / BlockEdgeLen >= BoardEdgeNum || y / BlockEdgeLen >= BoardEdgeNum || y / BlockEdgeLen < 0.0 || x / BlockEdgeLen < 0.0){
                     std::cerr<<"detection.cpp getDepth関数内で配列外参照だよ！！"<< x / BoardEdgeLen << " "<<y / BoardEdgeLen <<std::endl;
@@ -246,7 +254,7 @@ std::pair<std::vector<std::tuple<int, int, int>>, std::vector<std::tuple<int, in
     
     
 
-    //cv::Mat M(960, 960, CV_8UC3, cv::Scalar(0,0,0));
+    cv::Mat M(960, 960, CV_8UC3, cv::Scalar(0,0,0));
     //std::cout<< std::setprecision(3);
     std::vector<float> uku;
     std::vector<std::tuple<int, int, int>> add;
@@ -277,23 +285,23 @@ std::pair<std::vector<std::tuple<int, int, int>>, std::vector<std::tuple<int, in
             average -= based_data.at(i).at(j);
             average /= BlockHigh;
             uku.push_back(average);
-            int high = std::round(average)-1;
-            high = std::max(high, -1);
+            int high = std::round(average);
+            high = std::max(high, 0);
             while(true){
                 auto itr = field.at(i).at(j).upper_bound(high);
                 if(itr == field.at(i).at(j).end())break;
                 field.at(i).at(j).erase(itr);
                 remove.push_back(std::make_tuple(i, j, high));
             }
-            if(high != -1 && field.at(i).at(j).find(high) == field.at(i).at(j).end()){
+            if(high != 0 && field.at(i).at(j).find(high) == field.at(i).at(j).end()){
                 field.at(i).at(j).insert(high);
-                add.push_back(std::make_tuple(i, j, high));
+                add.push_back(std::make_tuple(i, high, j));
             }
             // f.push_back(average * BlockHigh);
             if(std::isnan(average)){
                 std::cout<<"nanananana"<<std::endl;
             }
-            /*
+            
             for(int p = i*20 ; p < 20+i*20 ; p++){
                 cv::Vec3b* ptr = M.ptr<cv::Vec3b>( p );
                 for(int q = j*20 ; q < 20+j*20 ; q++){
@@ -302,7 +310,7 @@ std::pair<std::vector<std::tuple<int, int, int>>, std::vector<std::tuple<int, in
                     //ptr[q] = cv::Vec3b(high *5000+100, high *5000+100, high *5000+100);
                 }
             }
-            */
+            
             
         }
     }
@@ -311,8 +319,8 @@ std::pair<std::vector<std::tuple<int, int, int>>, std::vector<std::tuple<int, in
     for(int i = 0;i < 10;i++){
         std::cout<<i<<" : "<<uku.at(i)<<std::endl;
     }
-    //cv::imshow("Visualizer", M);
-    //int c = cv::waitKey();
+    cv::imshow("Visualizer", M);
+    int c = cv::waitKey();
     return std::make_pair(add, remove);
 }
 
@@ -439,6 +447,7 @@ void Detection::detectBoard(){
 
         do {
             auto im = pipe.wait_for_frames().get_color_frame();
+           // std::cout<<"BBB"<<std::endl;
             cv::Mat image = frame_to_mat(im);
             std::cout<<image.rows<<" "<<image.cols<<std::endl;
         
@@ -636,7 +645,8 @@ std::tuple<float, float, float> Detection::translatePlanePoint(float x, float y,
     float x2 = std::get<0>(BoardPosBasedData.at(2)) - std::get<0>(BoardPosBasedData.at(0));
     float y2 = std::get<1>(BoardPosBasedData.at(2)) - std::get<1>(BoardPosBasedData.at(0));
     float z2 = std::get<2>(BoardPosBasedData.at(2)) - std::get<2>(BoardPosBasedData.at(0));
-    return std::make_tuple(inner_product(std::make_tuple(x, y, z), std::make_tuple(x1, y1, z1)) / vector_distance(std::make_tuple(x1, y1, z1)), inner_product(std::make_tuple(x, y, z), std::make_tuple(x2, y2, z2)) / vector_distance(std::make_tuple(x2, y2, z2)), inner_product(outer_product(std::make_tuple(x1, y1, z1), std::make_tuple(x2, y2, z2)), std::make_tuple(x, y, z)) / vector_distance(std::make_tuple(x1, y1, z1)) / vector_distance(std::make_tuple(x2, y2, z2)));
+
+    return std::make_tuple((x * x1 + y * y1 + z * z1 ) / std::sqrt(std::pow(x1, 2) + std::pow(y1, 2) + std::pow(z1, 2)), (x * x2 + y * y2 + z * z2) / std::sqrt(std::pow(x2, 2) + std::pow(y2, 2) + std::pow(z2, 2)), inner_product(outer_product(std::make_tuple(x1, y1, z1), std::make_tuple(x2, y2, z2)), std::make_tuple(x, y, z)) / vector_distance(std::make_tuple(x1, y1, z1)) / vector_distance(std::make_tuple(x2, y2, z2)));
 }
 
 std::tuple<float, float, float> Detection::translatePlanePoint(std::tuple<float, float, float> V){

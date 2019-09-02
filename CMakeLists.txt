@@ -13,3 +13,7 @@ include_directories(${OpenCV_INCLUDE_DIRS})
 target_link_libraries(a.out ${RealSense2_LIBRARIES})
 target_link_libraries(a.out ${OpenCV_LIBRARIES})
 
+set(CURL_LIBRARY "-lcurl")
+find_package(CURL REQUIRED)
+include_directories(${CURL_INCLUDE_DIR})
+target_link_libraries(a.out ${CURL_LIBRARIES})
