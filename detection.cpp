@@ -19,11 +19,11 @@ Detection::Detection(){
     field = std::vector<std::vector<std::set<int>>>(BoardEdgeNum, std::vector<std::set<int>>(BoardEdgeNum));
 
     for(int i = 0;i < 3;i++){
-        std::vector<std::tuple<float, float, float>> depth_data = getDepth();
-        for(auto d : depth_data){
-            float x = std::get<0>(d);
-            float y = std::get<1>(d);
-            float z = std::get<2>(d);
+        auto uku = getDepthAndColor();
+        for(auto d : uku){
+            float x = std::get<0>(d.first);
+            float y = std::get<1>(d.first);
+            float z = std::get<2>(d.first);
             if(0.0 < x && x < BoardEdgeLen && 0.0 < y && y < BoardEdgeLen){
                 if(x / BlockEdgeLen >= BoardEdgeNum || y / BlockEdgeLen >= BoardEdgeNum || y / BlockEdgeLen < 0 || x / BlockEdgeLen < 0){
                     std::cerr<<"detection.cpp コンストラクタ内で配列外参照だよ！！"<< std::floor(x / BoardEdgeLen) << " "<<std::floor(y / BoardEdgeLen)<<std::endl;
@@ -87,6 +87,8 @@ std::vector<std::tuple<float, float, float>> Detection::getDepth(){
 }
 
 std::vector<std::pair<std::tuple<float, float, float>, std::tuple<int, int, int>>> Detection::getDepthAndColor(){
+
+    /*
 
     auto frame_to_mat = [](const rs2::frame& f){
         auto vf = f.as<rs2::video_frame>();
@@ -156,6 +158,52 @@ std::vector<std::pair<std::tuple<float, float, float>, std::tuple<int, int, int>
             data.emplace_back(std::make_pair(translatePlanePoint(qpoint[0], qpoint[1], qpoint[2]), std::make_tuple(bgr[2], bgr[1], bgr[0]))); //bgr to rgb
         }
     }
+    
+
+    return data;
+    */
+
+    std::vector<std::pair<std::tuple<float, float, float>, std::tuple<int, int, int>>> data;
+   
+
+    int width = 1280;
+    int height = 720;
+    rs2::frameset frames = pipe.wait_for_frames();
+    rs2::align align(RS2_STREAM_COLOR);
+    auto aligned_frames = align.process(frames);
+    rs2::video_frame color_frame = aligned_frames.first(RS2_STREAM_COLOR);
+    rs2::depth_frame depth = aligned_frames.get_depth_frame();
+
+    rs2::pointcloud pc;
+    rs2::points points;
+
+    pc.map_to(color_frame);
+
+    points = pc.calculate(depth);
+
+    int bytes = color_frame.get_bytes_per_pixel();   // Get # of bytes per pixel
+    int strides = color_frame.get_stride_in_bytes(); // Get line width in bytes
+    int Text_Index =  (bytes + strides);
+
+    const auto New_Texture = reinterpret_cast<const uint8_t*>(color_frame.get_data());
+
+    auto vertices = points.get_vertices();              // get vertices
+    auto tex_coords = points.get_texture_coordinates(); // and texture coordinates
+
+    for(int i = 0 ; i < points.size() ; i++){
+        if(vertices[i].z){
+            int Text_Index = (bytes *  std::min(std::max(int(tex_coords[i].u * width  + .5f), 0), width - 1) 
+                            + strides * std::min(std::max(int(tex_coords[i].v * height + .5f), 0), height - 1));
+            
+            int NT1 = New_Texture[Text_Index];
+            int NT2 = New_Texture[Text_Index + 1];
+            int NT3 = New_Texture[Text_Index + 2];
+
+            data.push_back(std::make_pair(translatePlanePoint(vertices[i].x, vertices[i].y, vertices[i].z), std::make_tuple(NT1, NT2, NT3)));
+
+        }
+    }
+    std::cout<<data.size()<<std::endl;
     return data;
 }
 
