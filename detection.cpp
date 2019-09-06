@@ -1,6 +1,7 @@
 #include "detection.h"
 
 Detection::Detection(){
+    test_opencv();
     cpu_num = std::thread::hardware_concurrency();
 
     threads.resize(cpu_num);    
@@ -17,6 +18,15 @@ Detection::Detection(){
     based_data = std::vector<std::vector<float>>(BoardEdgeNum, std::vector<float>(BoardEdgeNum, 0));
     std::vector<std::vector<std::vector<float>>> data = std::vector<std::vector<std::vector<float>>>(BoardEdgeNum, std::vector<std::vector<float>>(BoardEdgeNum));
     field = std::vector<std::vector<std::set<int>>>(BoardEdgeNum, std::vector<std::set<int>>(BoardEdgeNum));
+    float x1 = std::get<0>(BoardPosBasedData.at(1)) - std::get<0>(BoardPosBasedData.at(0));
+    float y1 = std::get<1>(BoardPosBasedData.at(1)) - std::get<1>(BoardPosBasedData.at(0));
+    float z1 = std::get<2>(BoardPosBasedData.at(1)) - std::get<2>(BoardPosBasedData.at(0));
+    float x2 = std::get<0>(BoardPosBasedData.at(2)) - std::get<0>(BoardPosBasedData.at(0));
+    float y2 = std::get<1>(BoardPosBasedData.at(2)) - std::get<1>(BoardPosBasedData.at(0));
+    float z2 = std::get<2>(BoardPosBasedData.at(2)) - std::get<2>(BoardPosBasedData.at(0));
+    
+    distance_A = std::sqrt(x1 * x1 + y1 * y1 + z1 * z1);
+    distance_B = std::sqrt(x2 * x2 + y2 * y2 + z2 * z2);
 
     for(int i = 0;i < 3;i++){
         auto uku = getDepthAndColor();
@@ -35,6 +45,7 @@ Detection::Detection(){
             }
         }
     }
+
     std::cout<<"got data"<<std::endl;
     for(int i = 0;i < BoardEdgeNum;i++){
         for(int j = 0;j < BoardEdgeNum;j++){
@@ -62,6 +73,7 @@ Detection::Detection(){
             based_data.at(i).at(j) = average;
         }
     }
+    
 }
 
 std::vector<std::tuple<float, float, float>> Detection::getDepth(){
@@ -329,7 +341,9 @@ std::pair<std::vector<std::tuple<int, int, int>>, std::vector<std::tuple<int, in
                     addcnt++;
                 }
             }
-            average = t_average / addcnt;
+            //average = t_average / addcnt;
+            std::sort(dis_data.begin(), dis_data.end());
+            average = dis_data.at(dis_data.size() / 2);
             average -= based_data.at(i).at(j);
             average /= BlockHigh;
             uku.push_back(average);
@@ -587,7 +601,7 @@ void Detection::detectBoard(){
 
         for(int i = 0;i < 4;i++){
             BoardPosBasedData.push_back(translatePixelToP3DPoint((float)frame_pos.at(i).first, (float)frame_pos.at(i).second, intr, depth));
-            //std::cout<<std::get<0>(BoardPosBasedData.back())<<" "<<std::get<1>(BoardPosBasedData.back())<<" "<<std::get<2>(BoardPosBasedData.back())<<std::endl;
+            std::cout<<std::get<0>(BoardPosBasedData.back())<<" "<<std::get<1>(BoardPosBasedData.back())<<" "<<std::get<2>(BoardPosBasedData.back())<<std::endl;
         }
         std::vector<std::pair<float, int>> ins;
         for(int i = 0;i < 4;i++){
@@ -694,7 +708,7 @@ std::tuple<float, float, float> Detection::translatePlanePoint(float x, float y,
     float y2 = std::get<1>(BoardPosBasedData.at(2)) - std::get<1>(BoardPosBasedData.at(0));
     float z2 = std::get<2>(BoardPosBasedData.at(2)) - std::get<2>(BoardPosBasedData.at(0));
 
-    return std::make_tuple((x * x1 + y * y1 + z * z1 ) / std::sqrt(std::pow(x1, 2) + std::pow(y1, 2) + std::pow(z1, 2)), (x * x2 + y * y2 + z * z2) / std::sqrt(std::pow(x2, 2) + std::pow(y2, 2) + std::pow(z2, 2)), inner_product(outer_product(std::make_tuple(x1, y1, z1), std::make_tuple(x2, y2, z2)), std::make_tuple(x, y, z)) / vector_distance(std::make_tuple(x1, y1, z1)) / vector_distance(std::make_tuple(x2, y2, z2)));
+    return std::make_tuple(inner_product(std::make_tuple(x, y, z), std::make_tuple(x1, y1, z1)) / distance_A, inner_product(std::make_tuple(x, y, z), std::make_tuple(x2, y2, z2)) / distance_B, inner_product(outer_product(std::make_tuple(x1, y1, z1), std::make_tuple(x2, y2, z2)), std::make_tuple(x, y, z)) / distance_A / distance_B);
 }
 
 std::tuple<float, float, float> Detection::translatePlanePoint(std::tuple<float, float, float> V){
@@ -721,5 +735,37 @@ std::tuple<float, float, float> Detection::translatePlanePoint(std::tuple<float,
     float x2 = std::get<0>(BoardPosBasedData.at(2)) - std::get<0>(BoardPosBasedData.at(0));
     float y2 = std::get<1>(BoardPosBasedData.at(2)) - std::get<1>(BoardPosBasedData.at(0));
     float z2 = std::get<2>(BoardPosBasedData.at(2)) - std::get<2>(BoardPosBasedData.at(0));
-    return std::make_tuple(inner_product(std::make_tuple(x, y, z), std::make_tuple(x1, y1, z1)) / vector_distance(std::make_tuple(x1, y1, z1)), inner_product(std::make_tuple(x, y, z), std::make_tuple(x2, y2, z2)) / vector_distance(std::make_tuple(x2, y2, z2)), inner_product(outer_product(std::make_tuple(x1, y1, z1), std::make_tuple(x2, y2, z2)), std::make_tuple(x, y, z)) / vector_distance(std::make_tuple(x1, y1, z1)) / vector_distance(std::make_tuple(x2, y2, z2)));
+
+    return std::make_tuple(inner_product(std::make_tuple(x, y, z), std::make_tuple(x1, y1, z1)) / distance_A, inner_product(std::make_tuple(x, y, z), std::make_tuple(x2, y2, z2)) / distance_B, inner_product(outer_product(std::make_tuple(x1, y1, z1), std::make_tuple(x2, y2, z2)), std::make_tuple(x, y, z)) / distance_A / distance_B);
+}
+void Detection::test_opencv(){
+     // Declare depth colorizer for pretty visualization of depth data
+    rs2::colorizer color_map;
+
+    // Declare RealSense pipeline, encapsulating the actual device and sensors
+    rs2::pipeline pipe;
+    // Start streaming with default recommended configuration
+    pipe.start();
+
+    using namespace cv;
+    const auto window_name = "Display Image";
+    namedWindow(window_name, WINDOW_AUTOSIZE);
+
+    while (waitKey(1) < 0 && getWindowProperty(window_name, WND_PROP_AUTOSIZE) >= 0)
+    {
+        rs2::frameset data = pipe.wait_for_frames(); // Wait for next set of frames from the camera
+        rs2::frame depth = data.get_depth_frame().apply_filter(color_map);
+
+        // Query frame size (width and height)
+        const int w = depth.as<rs2::video_frame>().get_width();
+        const int h = depth.as<rs2::video_frame>().get_height();
+
+        // Create OpenCV matrix of size (w,h) from the colorized depth data
+        Mat image(Size(w, h), CV_8UC3, (void*)depth.get_data(), Mat::AUTO_STEP);
+
+        // Update the window with new data
+        imshow(window_name, image);
+    }
+
+    return;
 }

@@ -39,6 +39,8 @@ public:
     rs2::config cfg;
     rs2::pipeline_profile profile;
     rs2::device dev;
+    float distance_A;
+    float distance_B;
 
     std::vector<std::thread> threads;
     int cpu_num;
@@ -54,4 +56,6 @@ public:
 
     std::tuple<float, float, float> translatePlanePoint(float x, float y, float z);
     std::tuple<float, float, float> translatePlanePoint(std::tuple<float, float, float> point_pos);
+
+    void test_opencv();
 };
