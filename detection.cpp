@@ -1,7 +1,7 @@
 #include "detection.h"
 
 Detection::Detection(){
-    test_opencv();
+    //test_opencv();
     cpu_num = std::thread::hardware_concurrency();
 
     threads.resize(cpu_num);    
@@ -24,9 +24,23 @@ Detection::Detection(){
     float x2 = std::get<0>(BoardPosBasedData.at(2)) - std::get<0>(BoardPosBasedData.at(0));
     float y2 = std::get<1>(BoardPosBasedData.at(2)) - std::get<1>(BoardPosBasedData.at(0));
     float z2 = std::get<2>(BoardPosBasedData.at(2)) - std::get<2>(BoardPosBasedData.at(0));
+
+    calc_x1 = x1;
+    calc_x2 = x2;
+    calc_y1 = y1;
+    calc_y2 = y2;
+    calc_z1 = z1;
+    calc_z2 = z2;
     
     distance_A = std::sqrt(x1 * x1 + y1 * y1 + z1 * z1);
     distance_B = std::sqrt(x2 * x2 + y2 * y2 + z2 * z2);
+
+    std::tuple<float, float, float> outer = outer_product(std::make_tuple(x1, y1, z1), std::make_tuple(x2, y2, z2));
+
+    outer_x = std::get<0>(outer);
+    outer_y = std::get<1>(outer);
+    outer_z = std::get<2>(outer);
+
 
     for(int i = 0;i < 3;i++){
         auto uku = getDepthAndColor();
@@ -100,7 +114,7 @@ std::vector<std::tuple<float, float, float>> Detection::getDepth(){
 
 std::vector<std::pair<std::tuple<float, float, float>, std::tuple<int, int, int>>> Detection::getDepthAndColor(){
 
-    /*
+    
 
     auto frame_to_mat = [](const rs2::frame& f){
         auto vf = f.as<rs2::video_frame>();
@@ -133,10 +147,9 @@ std::vector<std::pair<std::tuple<float, float, float>, std::tuple<int, int, int>
         throw std::runtime_error("Frame format is not supported yet!");
     };
 
-    std::cout<<"getDepthFaster"<<std::endl;
     float width = 1280;
     float height = 720;
-    std::vector<std::pair<std::tuple<float, float, float>, std::tuple<int, int, int>>> data;
+    std::vector<std::pair<std::tuple<float, float, float>, std::tuple<int, int, int>>> data(width * height);
     rs2::frameset frames = pipe.wait_for_frames();
     rs2::align align(RS2_STREAM_COLOR);
     auto aligned_frames = align.process(frames);
@@ -152,29 +165,35 @@ std::vector<std::pair<std::tuple<float, float, float>, std::tuple<int, int, int>
 
     rs2_intrinsics intr = frames.get_profile().as<rs2::video_stream_profile>().get_intrinsics();
 
-    std::cout<<"mid"<<std::endl;
-
     cv::Mat image = frame_to_mat(color_frame);
+
+    int cnt = 0;
+    float pixel[2];
+    float qpoint[3];
 
     for(int y = 1;y <= height;y++){
         cv::Vec3b* ptr = image.ptr<cv::Vec3b>( y-1 );
         for(int x = 1;x <= width ; x++){
-            float pixel[2] = {x, y};
-            float qpoint[3];
+            pixel[0] = x;
+            pixel[1] = y;
             int idx = (x-1) + (y-1) * width;
-            auto z_distance = (int)(z_pixels[idx]) * scale;
+            float z_distance = (int)(z_pixels[idx]) * scale;
             rs2_deproject_pixel_to_point(qpoint, &intr, pixel, z_distance);
 
             cv::Vec3b bgr = ptr[x-1];
 
-            data.emplace_back(std::make_pair(translatePlanePoint(qpoint[0], qpoint[1], qpoint[2]), std::make_tuple(bgr[2], bgr[1], bgr[0]))); //bgr to rgb
+            data[cnt] = std::make_pair(translatePlanePoint(qpoint[0], qpoint[1], qpoint[2]), std::tuple<int, int, int>(bgr[2], bgr[1], bgr[0])); //bgr to rgb
+            cnt++;
+            //data.emplace_back(std::make_pair(std::make_tuple(qpoint[0], qpoint[1], qpoint[2]), std::make_tuple(bgr[2], bgr[1], bgr[0]))); //bgr to rgb 実験用
+            
         }
     }
     
 
     return data;
-    */
+    
 
+    /*
     std::vector<std::pair<std::tuple<float, float, float>, std::tuple<int, int, int>>> data;
    
 
@@ -217,6 +236,7 @@ std::vector<std::pair<std::tuple<float, float, float>, std::tuple<int, int, int>
     }
     std::cout<<data.size()<<std::endl;
     return data;
+    */
 }
 
 std::pair<std::vector<std::tuple<int, int, int>>, std::vector<std::tuple<int, int, int>>> Detection::singleDetect(){
@@ -312,7 +332,7 @@ std::pair<std::vector<std::tuple<int, int, int>>, std::vector<std::tuple<int, in
         }
     }
     
-    
+    std::cout<<"uku"<<std::endl;
 
     cv::Mat M(960, 960, CV_8UC3, cv::Scalar(0,0,0));
     //std::cout<< std::setprecision(3);
@@ -518,10 +538,12 @@ void Detection::detectBoard(){
                 std::cerr << "Couldn't load " << std::endl;
                 std::abort();
             }
-
+            
             findSquares(image, squares);
             drawSquares(image, squares);
         }while(squares.empty());
+
+        
 
         std::vector<std::pair<int, int>> frame_pos;
         //とりあえず面積の中央値の枠を採用することにする
@@ -688,27 +710,12 @@ std::tuple<float, float, float> Detection::translatePixelToP3DPoint(float x, flo
 }
 
 std::tuple<float, float, float> Detection::translatePlanePoint(float x, float y, float z){
-    auto inner_product = [](std::tuple<float, float, float> a, std::tuple<float, float, float> b){
-        return std::get<0>(a) * std::get<0>(b) + std::get<1>(a) * std::get<1>(b) + std::get<2>(a) * std::get<2>(b);
-    };
-    auto outer_product = [](std::tuple<float, float, float> a, std::tuple<float, float, float> b){
-        return std::make_tuple(std::get<1>(a) * std::get<2>(b) - std::get<2>(a) * std::get<1>(b), std::get<2>(a) * std::get<0>(b) - std::get<0>(a) * std::get<2>(b), std::get<0>(a) * std::get<1>(b) - std::get<1>(a) * std::get<0>(b));
-    };
-    auto vector_distance = [](std::tuple<float, float, float> a){
-        return std::sqrt(std::pow(std::get<0>(a), 2) + std::pow(std::get<1>(a), 2) + std::pow(std::get<2>(a), 2));
-    };
 
     x -= std::get<0>(BoardPosBasedData.at(0));
     y -= std::get<1>(BoardPosBasedData.at(0));
     z -= std::get<2>(BoardPosBasedData.at(0));
-    float x1 = std::get<0>(BoardPosBasedData.at(1)) - std::get<0>(BoardPosBasedData.at(0));
-    float y1 = std::get<1>(BoardPosBasedData.at(1)) - std::get<1>(BoardPosBasedData.at(0));
-    float z1 = std::get<2>(BoardPosBasedData.at(1)) - std::get<2>(BoardPosBasedData.at(0));
-    float x2 = std::get<0>(BoardPosBasedData.at(2)) - std::get<0>(BoardPosBasedData.at(0));
-    float y2 = std::get<1>(BoardPosBasedData.at(2)) - std::get<1>(BoardPosBasedData.at(0));
-    float z2 = std::get<2>(BoardPosBasedData.at(2)) - std::get<2>(BoardPosBasedData.at(0));
 
-    return std::make_tuple(inner_product(std::make_tuple(x, y, z), std::make_tuple(x1, y1, z1)) / distance_A, inner_product(std::make_tuple(x, y, z), std::make_tuple(x2, y2, z2)) / distance_B, inner_product(outer_product(std::make_tuple(x1, y1, z1), std::make_tuple(x2, y2, z2)), std::make_tuple(x, y, z)) / distance_A / distance_B);
+    return std::make_tuple((x * calc_x1 + y * calc_y1 + z * calc_z1) / distance_A, (x * calc_x2 + y * calc_y2 + z * calc_z2) / distance_B, (x * outer_x + y * outer_y + z * outer_z) / distance_A / distance_B);
 }
 
 std::tuple<float, float, float> Detection::translatePlanePoint(std::tuple<float, float, float> V){
@@ -716,34 +723,17 @@ std::tuple<float, float, float> Detection::translatePlanePoint(std::tuple<float,
     float y = std::get<1>(V);
     float z = std::get<2>(V);
 
-    auto inner_product = [](std::tuple<float, float, float> a, std::tuple<float, float, float> b){
-        return std::get<0>(a) * std::get<0>(b) + std::get<1>(a) * std::get<1>(b) + std::get<2>(a) * std::get<2>(b);
-    };
-    auto outer_product = [](std::tuple<float, float, float> a, std::tuple<float, float, float> b){
-        return std::make_tuple(std::get<1>(a) * std::get<2>(b) - std::get<2>(a) * std::get<1>(b), std::get<2>(a) * std::get<0>(b) - std::get<0>(a) * std::get<2>(b), std::get<0>(a) * std::get<1>(b) - std::get<1>(a) * std::get<0>(b));
-    };
-    auto vector_distance = [](std::tuple<float, float, float> a){
-        return std::sqrt(std::pow(std::get<0>(a), 2) + std::pow(std::get<1>(a), 2) + std::pow(std::get<2>(a), 2));
-    };
-
     x -= std::get<0>(BoardPosBasedData.at(0));
     y -= std::get<1>(BoardPosBasedData.at(0));
     z -= std::get<2>(BoardPosBasedData.at(0));
-    float x1 = std::get<0>(BoardPosBasedData.at(1)) - std::get<0>(BoardPosBasedData.at(0));
-    float y1 = std::get<1>(BoardPosBasedData.at(1)) - std::get<1>(BoardPosBasedData.at(0));
-    float z1 = std::get<2>(BoardPosBasedData.at(1)) - std::get<2>(BoardPosBasedData.at(0));
-    float x2 = std::get<0>(BoardPosBasedData.at(2)) - std::get<0>(BoardPosBasedData.at(0));
-    float y2 = std::get<1>(BoardPosBasedData.at(2)) - std::get<1>(BoardPosBasedData.at(0));
-    float z2 = std::get<2>(BoardPosBasedData.at(2)) - std::get<2>(BoardPosBasedData.at(0));
 
-    return std::make_tuple(inner_product(std::make_tuple(x, y, z), std::make_tuple(x1, y1, z1)) / distance_A, inner_product(std::make_tuple(x, y, z), std::make_tuple(x2, y2, z2)) / distance_B, inner_product(outer_product(std::make_tuple(x1, y1, z1), std::make_tuple(x2, y2, z2)), std::make_tuple(x, y, z)) / distance_A / distance_B);
+    return std::make_tuple((x * calc_x1 + y * calc_y1 + z * calc_z1) / distance_A, (x * calc_x2 + y * calc_y2 + z * calc_z2) / distance_B, (x * outer_x + y * outer_y + z * outer_z) / distance_A / distance_B);
 }
 void Detection::test_opencv(){
      // Declare depth colorizer for pretty visualization of depth data
     rs2::colorizer color_map;
 
-    // Declare RealSense pipeline, encapsulating the actual device and sensors
-    rs2::pipeline pipe;
+    // Declare RealSense pipeline, encapsulating the actual device and sensor
     // Start streaming with default recommended configuration
     pipe.start();
 
@@ -763,9 +753,21 @@ void Detection::test_opencv(){
         // Create OpenCV matrix of size (w,h) from the colorized depth data
         Mat image(Size(w, h), CV_8UC3, (void*)depth.get_data(), Mat::AUTO_STEP);
 
+        float* _depth = (float*)depth.get_data();
+
+        for(int i = 0;;i++){
+            std::cout<<i<<" : "<<_depth[i]<<std::endl;
+        }
+
         // Update the window with new data
         imshow(window_name, image);
     }
 
     return;
+}
+float Detection::inner_product(std::tuple<float, float, float> a, std::tuple<float, float, float> b){
+    return std::get<0>(a) * std::get<0>(b) + std::get<1>(a) * std::get<1>(b) + std::get<2>(a) * std::get<2>(b);
+}
+std::tuple<float, float, float> Detection::outer_product(std::tuple<float, float, float> a, std::tuple<float, float, float> b){
+    return std::make_tuple(std::get<1>(a) * std::get<2>(b) - std::get<2>(a) * std::get<1>(b), std::get<2>(a) * std::get<0>(b) - std::get<0>(a) * std::get<2>(b), std::get<0>(a) * std::get<1>(b) - std::get<1>(a) * std::get<0>(b));
 }

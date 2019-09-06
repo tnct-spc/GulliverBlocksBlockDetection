@@ -41,6 +41,15 @@ public:
     rs2::device dev;
     float distance_A;
     float distance_B;
+    float calc_x1;
+    float calc_x2;
+    float calc_y1;
+    float calc_y2;
+    float calc_z1;
+    float calc_z2;
+    float outer_x;
+    float outer_y;
+    float outer_z;
 
     std::vector<std::thread> threads;
     int cpu_num;
@@ -56,6 +65,11 @@ public:
 
     std::tuple<float, float, float> translatePlanePoint(float x, float y, float z);
     std::tuple<float, float, float> translatePlanePoint(std::tuple<float, float, float> point_pos);
+
+    float inner_product(std::tuple<float, float, float> a, std::tuple<float, float, float> b);
+    std::tuple<float, float, float> outer_product(std::tuple<float, float, float> a, std::tuple<float, float, float> b);
+
+ 
 
     void test_opencv();
 };
