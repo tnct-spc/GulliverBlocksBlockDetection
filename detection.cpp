@@ -9,8 +9,6 @@ Detection::Detection(){
     cfg.enable_stream(RS2_STREAM_COLOR, 1280, 720, RS2_FORMAT_RGB8, 30);
     cfg.enable_stream(RS2_STREAM_DEPTH, 1280, 720, RS2_FORMAT_Z16, 30);
 
-    std::cout<<"APA"<<std::endl;
-
     profile = pipe.start(cfg);
     dev = profile.get_device();
 
@@ -539,7 +537,17 @@ void Detection::detectBoard(){
                 std::abort();
             }
             
-            findSquares(image, squares);
+            //findSquares(image, squares);
+            cv::imwrite("ukunikia.png", image);
+            std::cout<<"please enter point pos"<<std::endl;
+            std::vector<cv::Point> inputs(4);
+            for(int i = 0;i < 4;i++){
+                int x,y;std::cin >> x >> y;
+                std::cout<<"("<<x<<","<<y<<")"<<std::endl;
+                inputs.at(i).x = x;
+                inputs.at(i).y = y;
+            }
+            squares.push_back(inputs);
             drawSquares(image, squares);
         }while(squares.empty());
 
