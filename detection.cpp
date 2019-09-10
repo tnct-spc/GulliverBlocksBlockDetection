@@ -2,9 +2,6 @@
 
 Detection::Detection(){
     //test_opencv();
-    cpu_num = std::thread::hardware_concurrency();
-
-    threads.resize(cpu_num);    
 
     cfg.enable_stream(RS2_STREAM_COLOR, 1280, 720, RS2_FORMAT_RGB8, 30);
     cfg.enable_stream(RS2_STREAM_DEPTH, 1280, 720, RS2_FORMAT_Z16, 30);
@@ -15,7 +12,7 @@ Detection::Detection(){
     dev = profile.get_device();
 
     detectBoard();
-    based_data = std::vector<std::vector<float>>(BoardEdgeNum, std::vector<float>(BoardEdgeNum, 0));
+    based_data = std::vector<std::vector<double>>(BoardEdgeNum, std::vector<double>(BoardEdgeNum, 0));
     std::vector<std::vector<std::vector<float>>> data = std::vector<std::vector<std::vector<float>>>(BoardEdgeNum, std::vector<std::vector<float>>(BoardEdgeNum));
     field = std::vector<std::vector<std::set<int>>>(BoardEdgeNum, std::vector<std::set<int>>(BoardEdgeNum));
     float x1 = std::get<0>(BoardPosBasedData.at(1)) - std::get<0>(BoardPosBasedData.at(0));
@@ -49,12 +46,12 @@ Detection::Detection(){
             float y = std::get<1>(d.first);
             float z = std::get<2>(d.first);
             if(0.0 < x && x < BoardEdgeLen && 0.0 < y && y < BoardEdgeLen){
-                if(x / BlockEdgeLen >= BoardEdgeNum || y / BlockEdgeLen >= BoardEdgeNum || y / BlockEdgeLen < 0 || x / BlockEdgeLen < 0){
+                if(std::floor(x / BlockEdgeLen) >= BoardEdgeNum || std::floor(y / BlockEdgeLen) >= BoardEdgeNum || std::floor(y / BlockEdgeLen) < 0 || std::floor(x / BlockEdgeLen) < 0){
                     std::cerr<<"detection.cpp コンストラクタ内で配列外参照だよ！！"<< std::floor(x / BoardEdgeLen) << " "<<std::floor(y / BoardEdgeLen)<<std::endl;
                     std::abort();
                 }
-                if(!(0.1 < x / BlockEdgeLen - std::floor(x / BlockEdgeLen) && x / BlockEdgeLen - std::floor(x / BlockEdgeLen) < 0.9))continue; //あまり境界に近くないほうがよい
-                if(!(0.1 < y / BlockEdgeLen - std::floor(y / BlockEdgeLen) && y / BlockEdgeLen - std::floor(y / BlockEdgeLen) < 0.9))continue; //あまり境界に近くないほうがよい
+            //    if(!(0.1 < x / BlockEdgeLen - std::floor(x / BlockEdgeLen) && x / BlockEdgeLen - std::floor(x / BlockEdgeLen) < 0.9))continue; //あまり境界に近くないほうがよい
+            //    if(!(0.1 < y / BlockEdgeLen - std::floor(y / BlockEdgeLen) && y / BlockEdgeLen - std::floor(y / BlockEdgeLen) < 0.9))continue; //あまり境界に近くないほうがよい
                 data.at(std::floor(x / BlockEdgeLen)).at(std::floor(y / BlockEdgeLen)).push_back(z);
             }
         }
@@ -243,7 +240,7 @@ std::pair<std::vector<std::tuple<int, int, int>>, std::vector<std::tuple<int, in
 
     int t_num = 6;
     std::vector<std::vector<std::vector<std::vector<float>>>> multiframe_data = std::vector<std::vector<std::vector<std::vector<float>>>>(BoardEdgeNum, std::vector<std::vector<std::vector<float>>>(BoardEdgeNum, std::vector<std::vector<float>>(t_num, std::vector<float>({}))));
-    std::vector<std::vector<bool>> flag(BoardEdgeNum, std::vector<bool>(BoardEdgeNum, true));
+    //std::vector<std::vector<bool>> flag(BoardEdgeNum, std::vector<bool>(BoardEdgeNum, true));
     std::vector<std::vector<std::vector<float>>> data = std::vector<std::vector<std::vector<float>>>(BoardEdgeNum, std::vector<std::vector<float>>(BoardEdgeNum, std::vector<float>({})));
     std::cout<<"getting data now"<<std::endl;
     for(int i = 0;i < t_num;i++){
@@ -252,13 +249,13 @@ std::pair<std::vector<std::tuple<int, int, int>>, std::vector<std::tuple<int, in
             float x = std::get<0>(d.first);
             float y = std::get<1>(d.first);
             float z = std::get<2>(d.first);
-            if(0.0 < x && x < BoardEdgeLen && 0.0 < y && y < BoardEdgeLen){
-                if(x / BlockEdgeLen >= BoardEdgeNum || y / BlockEdgeLen >= BoardEdgeNum || y / BlockEdgeLen < 0.0 || x / BlockEdgeLen < 0.0){
-                    std::cerr<<"detection.cpp getDepth関数内で配列外参照だよ！！"<< x / BoardEdgeLen << " "<<y / BoardEdgeLen <<std::endl;
+            if(0.0 <= x && x < BoardEdgeLen && 0.0 <= y && y < BoardEdgeLen){
+                if(std::floor(x / BlockEdgeLen) >= BoardEdgeNum || std::floor(y / BlockEdgeLen) >= BoardEdgeNum || std::floor(y / BlockEdgeLen) < 0 || std::floor(x / BlockEdgeLen) < 0){
+                    std::cerr<<"detection.cpp getDepth関数内で配列外参照だよ！！"<<std::floor(x / BlockEdgeLen) << " "<<std::floor(y / BlockEdgeLen) <<std::endl;
                     std::abort();
                 }
-                if(!(0.2 < x / BlockEdgeLen - std::floor(x / BlockEdgeLen) && x / BlockEdgeLen - std::floor(x / BlockEdgeLen) < 0.8))continue; //あまり境界に近くないほうがよい
-                if(!(0.2 < y / BlockEdgeLen - std::floor(y / BlockEdgeLen) && y / BlockEdgeLen - std::floor(y / BlockEdgeLen) < 0.8))continue; //あまり境界に近くないほうがよい
+                //if(!(0.2 < x / BlockEdgeLen - std::floor(x / BlockEdgeLen) && x / BlockEdgeLen - std::floor(x / BlockEdgeLen) < 0.8))continue; //あまり境界に近くないほうがよい
+                //if(!(0.2 < y / BlockEdgeLen - std::floor(y / BlockEdgeLen) && y / BlockEdgeLen - std::floor(y / BlockEdgeLen) < 0.8))continue; //あまり境界に近くないほうがよい
                 data.at(std::floor(x / BlockEdgeLen)).at(std::floor(y / BlockEdgeLen)).emplace_back(z);
                 multiframe_data.at(std::floor(x / BlockEdgeLen)).at(std::floor(y / BlockEdgeLen)).at(i).emplace_back(z);
             }
@@ -266,7 +263,7 @@ std::pair<std::vector<std::tuple<int, int, int>>, std::vector<std::tuple<int, in
     }
     std::cout<<"finish get data"<<std::endl;
 
-    
+    /*
     for(int i = 0;i < BoardEdgeNum;i++){
         for(int j = 0;j < BoardEdgeNum;j++){
             std::vector<float> front;
@@ -331,6 +328,7 @@ std::pair<std::vector<std::tuple<int, int, int>>, std::vector<std::tuple<int, in
 
         }
     }
+    */
     
     std::cout<<"uku"<<std::endl;
 
@@ -341,13 +339,15 @@ std::pair<std::vector<std::tuple<int, int, int>>, std::vector<std::tuple<int, in
     std::vector<std::tuple<int, int, int>> remove;
     for(int i = 0;i < BoardEdgeNum;i++){
         for(int j = 0;j < BoardEdgeNum;j++){
-            if(!flag.at(i).at(j))continue;    
+      //      if(!flag.at(i).at(j))continue;    
             std::vector<float> dis_data = data.at(i).at(j);
             float sum = std::accumulate(dis_data.begin(), dis_data.end(), 0.0); 
 
             float average = sum / dis_data.size();
 
             float bunsan = 0;
+            //std::cout<<i<<" "<<j<<" "<<dis_data.size()<<std::endl;
+            if(!dis_data.size())continue;
             for(float a : dis_data){
                 bunsan += std::pow(average - a, 2);
             }
@@ -388,12 +388,10 @@ std::pair<std::vector<std::tuple<int, int, int>>, std::vector<std::tuple<int, in
                 cv::Vec3b* ptr = M.ptr<cv::Vec3b>( p );
                 for(int q = j*20 ; q < 20+j*20 ; q++){
 
-                    ptr[q] = cv::Vec3b(average * BlockHigh *5000+100, average * BlockHigh *5000+100, average * BlockHigh *5000+100);
+                    ptr[q] = cv::Vec3b(average * BlockHigh * 2000 + 50, average * BlockHigh * 2000 + 50, average * BlockHigh * 2000+ 50);
                     //ptr[q] = cv::Vec3b(high *5000+100, high *5000+100, high *5000+100);
                 }
             }
-            
-            
         }
     }
     std::sort(uku.begin(), uku.end());
@@ -629,7 +627,7 @@ void Detection::detectBoard(){
         for(int i = 0;i < 4;i++){
             ins.push_back(std::make_pair(Distance(BoardPosBasedData.at(i), BoardPosBasedData.at(0)), i));
         }
-        std::vector<std::tuple<float, float, float>> _BoardPosBasedData;
+        std::vector<std::tuple<double, double, double>> _BoardPosBasedData;
         std::sort(ins.begin(), ins.end());
         for(int i = 0;i < 4;i++){
             _BoardPosBasedData.push_back(BoardPosBasedData.at(ins.at(i).second));
@@ -667,7 +665,7 @@ void Detection::detectBoard(){
     auto q = *std::min_element(ins.begin(), ins.end());
     int _i = q.second;
     std::swap(BoardPosBasedData.at(_i), BoardPosBasedData.at(0));
-    std::vector<std::tuple<float, float, float>> _BoardPosBasedData;
+    std::vector<std::tuple<double, double, double>> _BoardPosBasedData;
     ins.clear();
     for(int i = 0;i < 4;i++){
         ins.push_back(std::make_pair(Distance(BoardPosBasedData.at(i), BoardPosBasedData.at(0)), i));

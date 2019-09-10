@@ -26,33 +26,31 @@ private:
     std::vector<std::vector<double>> data;
     float BoardEdgeLen = 0.385; //Board Edge Length
     float BlockEdgeLen = 0.385 / 48.0;
-    const float dispersion_thresh = 0.0005;
+    const double dispersion_thresh = 0.0005;
     const int BoardEdgeNum = 48;
-    const float BlockHigh = 0.009;
+    const double BlockHigh = 0.009;
     const float BlockHighthresh = 0.5;
 
 public:
-    std::vector<std::tuple<float, float, float>> BoardPosBasedData;
+    std::vector<std::tuple<double, double, double>> BoardPosBasedData;
     std::vector<std::vector<std::set<int>>> field;
-    std::vector<std::vector<float>> based_data;
+    std::vector<std::vector<double>> based_data;
     rs2::pipeline pipe;
     rs2::config cfg;
     rs2::pipeline_profile profile;
     rs2::device dev;
-    float distance_A;
-    float distance_B;
-    float calc_x1;
-    float calc_x2;
-    float calc_y1;
-    float calc_y2;
-    float calc_z1;
-    float calc_z2;
-    float outer_x;
-    float outer_y;
-    float outer_z;
+    double distance_A;
+    double distance_B;
+    double calc_x1;
+    double calc_x2;
+    double calc_y1;
+    double calc_y2;
+    double calc_z1;
+    double calc_z2;
+    double outer_x;
+    double outer_y;
+    double outer_z;
 
-    std::vector<std::thread> threads;
-    int cpu_num;
 
     Detection();
     std::pair<std::vector<std::tuple<int, int, int>>, std::vector<std::tuple<int, int, int>>>  singleDetect(); //Widrh, Height, Depth
