@@ -1,12 +1,9 @@
 #include "detection.h"
 
 Detection::Detection(){
-    //test_opencv();
 
     cfg.enable_stream(RS2_STREAM_COLOR, 1280, 720, RS2_FORMAT_RGB8, 30);
     cfg.enable_stream(RS2_STREAM_DEPTH, 1280, 720, RS2_FORMAT_Z16, 30);
-
-    std::cout<<"APA"<<std::endl;
 
     profile = pipe.start(cfg);
     dev = profile.get_device();
@@ -57,10 +54,8 @@ Detection::Detection(){
         }
     }
 
-    std::cout<<"got data"<<std::endl;
     for(int i = 0;i < BoardEdgeNum;i++){
         for(int j = 0;j < BoardEdgeNum;j++){
-            //std::cout<<data.at(i).at(j).size()<<std::endl;
             std::vector<float> dis_data = data.at(i).at(j);
             float sum = std::accumulate(dis_data.begin(), dis_data.end(), 0.0); 
 
@@ -88,7 +83,7 @@ Detection::Detection(){
 }
 
 std::vector<std::tuple<float, float, float>> Detection::getDepth(){
-    std::cout<<"get Depth"<<std::endl;
+    std::cout<<"start get Depth"<<std::endl;
     float width = 1280;
     float height = 720;
     std::vector<std::tuple<float, float, float>> depth_data;
@@ -110,8 +105,6 @@ std::vector<std::tuple<float, float, float>> Detection::getDepth(){
 }
 
 std::vector<std::pair<std::tuple<float, float, float>, std::tuple<int, int, int>>> Detection::getDepthAndColor(){
-
-    
 
     auto frame_to_mat = [](const rs2::frame& f){
         auto vf = f.as<rs2::video_frame>();
@@ -179,68 +172,20 @@ std::vector<std::pair<std::tuple<float, float, float>, std::tuple<int, int, int>
 
             cv::Vec3b bgr = ptr[x-1];
 
-            data[cnt] = std::make_pair(translatePlanePoint(qpoint[0], qpoint[1], qpoint[2]), std::tuple<int, int, int>(bgr[2], bgr[1], bgr[0])); //bgr to rgb
+            data[cnt] = std::make_pair(translatePlanePoint(qpoint[0], qpoint[1], qpoint[2]), std::tuple<int, int, int>(bgr[2], bgr[1], bgr[0])); //bgr to rgb //めっちゃpush_backすると遅いのでいっぺんに確保してしまう
             cnt++;
             //data.emplace_back(std::make_pair(std::make_tuple(qpoint[0], qpoint[1], qpoint[2]), std::make_tuple(bgr[2], bgr[1], bgr[0]))); //bgr to rgb 実験用
             
         }
     }
-    
-
     return data;
-    
-
-    /*
-    std::vector<std::pair<std::tuple<float, float, float>, std::tuple<int, int, int>>> data;
-   
-
-    int width = 1280;
-    int height = 720;
-    rs2::frameset frames = pipe.wait_for_frames();
-    rs2::align align(RS2_STREAM_COLOR);
-    auto aligned_frames = align.process(frames);
-    rs2::video_frame color_frame = aligned_frames.first(RS2_STREAM_COLOR);
-    rs2::depth_frame depth = aligned_frames.get_depth_frame();
-
-    rs2::pointcloud pc;
-    rs2::points points;
-
-    pc.map_to(color_frame);
-
-    points = pc.calculate(depth);
-
-    int bytes = color_frame.get_bytes_per_pixel();   // Get # of bytes per pixel
-    int strides = color_frame.get_stride_in_bytes(); // Get line width in bytes
-    int Text_Index =  (bytes + strides);
-
-    const auto New_Texture = reinterpret_cast<const uint8_t*>(color_frame.get_data());
-
-    auto vertices = points.get_vertices();              // get vertices
-    auto tex_coords = points.get_texture_coordinates(); // and texture coordinates
-
-    for(int i = 0 ; i < points.size() ; i++){
-        if(vertices[i].z){
-            int Text_Index = (bytes *  std::min(std::max(int(tex_coords[i].u * width  + .5f), 0), width - 1) 
-                            + strides * std::min(std::max(int(tex_coords[i].v * height + .5f), 0), height - 1));
-            
-            int NT1 = New_Texture[Text_Index];
-            int NT2 = New_Texture[Text_Index + 1];
-            int NT3 = New_Texture[Text_Index + 2];
-
-            data.push_back(std::make_pair(translatePlanePoint(vertices[i].x, vertices[i].y, vertices[i].z), std::make_tuple(NT1, NT2, NT3)));
-
-        }
-    }
-    std::cout<<data.size()<<std::endl;
-    return data;
-    */
 }
 
 std::pair<std::vector<std::tuple<int, int, int>>, std::vector<std::tuple<int, int, int>>> Detection::singleDetect(){
 
     int t_num = 6;
     std::vector<std::vector<std::vector<std::vector<float>>>> multiframe_data = std::vector<std::vector<std::vector<std::vector<float>>>>(BoardEdgeNum, std::vector<std::vector<std::vector<float>>>(BoardEdgeNum, std::vector<std::vector<float>>(t_num, std::vector<float>({}))));
-    //std::vector<std::vector<bool>> flag(BoardEdgeNum, std::vector<bool>(BoardEdgeNum, true));
+    //std::vector<std::vector<bool>> hand_flag(BoardEdgeNum, std::vector<bool>(BoardEdgeNum, true)); //手の判定
     std::vector<std::vector<std::vector<float>>> data = std::vector<std::vector<std::vector<float>>>(BoardEdgeNum, std::vector<std::vector<float>>(BoardEdgeNum, std::vector<float>({})));
     std::cout<<"getting data now"<<std::endl;
     for(int i = 0;i < t_num;i++){
@@ -320,70 +265,66 @@ std::pair<std::vector<std::tuple<int, int, int>>, std::vector<std::tuple<int, in
             front_ave -= based_data.at(i).at(j);
             back_ave -= based_data.at(i).at(j);
             //前3フレームと後ろ3フレームの平均が2ブロック以上離れていたら切ってみる
-            //他の案として、別々にはずれ値処理をするのではなく、全体ではずれ値処理をしてから前と後ろで平均の差を取るというものがある
             if(abs(back_ave - front_ave) / BlockHigh >= 2){
-                flag.at(i).at(j) = false;
+                hand_flag.at(i).at(j) = false;
                 std::cout<<"disable detect pos("<<i<<","<<j<<")"<<std::endl;
             }
 
         }
     }
     */
-    
-    std::cout<<"uku"<<std::endl;
 
-    cv::Mat M(960, 960, CV_8UC3, cv::Scalar(0,0,0));
+    //cv::Mat M(960, 960, CV_8UC3, cv::Scalar(0,0,0));
     //std::cout<< std::setprecision(3);
-    std::vector<float> uku;
+    std::vector<float> depth_data_list;
     std::vector<std::tuple<int, int, int>> add;
     std::vector<std::tuple<int, int, int>> remove;
     for(int i = 0;i < BoardEdgeNum;i++){
         for(int j = 0;j < BoardEdgeNum;j++){
-      //      if(!flag.at(i).at(j))continue;    
-            std::vector<float> dis_data = data.at(i).at(j);
-            float sum = std::accumulate(dis_data.begin(), dis_data.end(), 0.0); 
+      //      if(!hand_flag.at(i).at(j))continue;    
+            std::vector<float> grid_data = data.at(i).at(j);
+            float sum = std::accumulate(grid_data.begin(), grid_data.end(), 0.0); 
 
-            float average = sum / dis_data.size();
+            float average = sum / grid_data.size();
 
             float bunsan = 0;
             //std::cout<<i<<" "<<j<<" "<<dis_data.size()<<std::endl;
-            if(!dis_data.size())continue;
-            for(float a : dis_data){
+            if(!grid_data.size())continue;
+            for(float a : grid_data){
                 bunsan += std::pow(average - a, 2);
             }
-            bunsan /= dis_data.size();
+            bunsan /= grid_data.size();
             float hensa = std::sqrt(bunsan);
             float t_average = 0;
             int addcnt = 0;
-            for(auto x : dis_data){
+            for(auto x : grid_data){
                 if(((x - average) / hensa) < 2){
                     t_average += x;
                     addcnt++;
                 }
             }
             //average = t_average / addcnt;
-            std::sort(dis_data.begin(), dis_data.end());
-            average = dis_data.at(dis_data.size() / 2);
+            std::sort(grid_data.begin(), grid_data.end());
+            average = grid_data.at(grid_data.size() / 2);
             average -= based_data.at(i).at(j);
             average /= BlockHigh;
-            uku.push_back(average);
+            depth_data_list.push_back(average);
             int high = std::round(average);
             high = std::max(high, 0);
             while(true){
                 auto itr = field.at(i).at(j).upper_bound(high);
                 if(itr == field.at(i).at(j).end())break;
-                remove.push_back(std::make_tuple(i, *itr, j));
+                remove.push_back(std::make_tuple(i, *itr, j)); //x z y
                 field.at(i).at(j).erase(itr);
             }
             if(high != 0 && field.at(i).at(j).find(high) == field.at(i).at(j).end()){
                 field.at(i).at(j).insert(high);
-                add.push_back(std::make_tuple(i, high, j));
+                add.push_back(std::make_tuple(i, high, j)); //x z y
             }
-            // f.push_back(average * BlockHigh);
             if(std::isnan(average)){
-                std::cout<<"nanananana"<<std::endl;
+                std::cout<<"average is nan"<<std::endl;
             }
-            
+            /*
             for(int p = i*20 ; p < 20+i*20 ; p++){
                 cv::Vec3b* ptr = M.ptr<cv::Vec3b>( p );
                 for(int q = j*20 ; q < 20+j*20 ; q++){
@@ -392,15 +333,16 @@ std::pair<std::vector<std::tuple<int, int, int>>, std::vector<std::tuple<int, in
                     //ptr[q] = cv::Vec3b(high *5000+100, high *5000+100, high *5000+100);
                 }
             }
+            */
         }
     }
-    std::sort(uku.begin(), uku.end());
-    std::reverse(uku.begin(), uku.end());
-    for(int i = 0;i < 10;i++){
-        std::cout<<i<<" : "<<uku.at(i)<<std::endl;
+    std::sort(depth_data_list.begin(), depth_data_list.end());
+    std::reverse(depth_data_list.begin(), depth_data_list.end());
+    for(int i = 0;i < std::min(10, (int)depth_data_list.size());i++){
+        std::cout<<i<<"th : "<<depth_data_list.at(i)<<std::endl;
     }
-    cv::imshow("Visualizer", M);
-    int c = cv::waitKey();
+    //cv::imshow("Visualizer", M);
+    //int c = cv::waitKey();
     return std::make_pair(add, remove);
 }
 
@@ -582,16 +524,16 @@ void Detection::detectBoard(){
         std::sort(frame_pos.begin(), frame_pos.end());
         */
         std::vector<std::pair<double, int>> frame_list;
-        int qwerty = 0;
+        int qwerty_idx = 0;
         for(auto a : squares){
-            double ans = 0;
+            double distance = 0;
             for(int i = 0;i < 4;i++){
-                ans += ((a.at(i).x - a.at((i+1)%4).x) * (a.at(i).y + a.at((i+1)%4).y));
+                distance += ((a.at(i).x - a.at((i+1)%4).x) * (a.at(i).y + a.at((i+1)%4).y));
             }
-            ans = std::abs(ans) / 2;
-            frame_list.push_back({ans, qwerty});
-            qwerty++;
-            std::cout<<ans<<std::endl;
+            distance = std::abs(distance) / 2;
+            frame_list.push_back({distance, qwerty_idx});
+            qwerty_idx++;
+            std::cout<<distance<<std::endl;
         }
         sort(frame_list.begin(), frame_list.end());
         int frame_idx = std::upper_bound(frame_list.begin(), frame_list.end(), std::make_pair(1.0*1e5, 0)) - frame_list.begin();
@@ -623,14 +565,14 @@ void Detection::detectBoard(){
             BoardPosBasedData.push_back(translatePixelToP3DPoint((float)frame_pos.at(i).first, (float)frame_pos.at(i).second, intr, depth));
             std::cout<<std::get<0>(BoardPosBasedData.back())<<" "<<std::get<1>(BoardPosBasedData.back())<<" "<<std::get<2>(BoardPosBasedData.back())<<std::endl;
         }
-        std::vector<std::pair<float, int>> ins;
+        std::vector<std::pair<float, int>> dist_idx_pair;
         for(int i = 0;i < 4;i++){
-            ins.push_back(std::make_pair(Distance(BoardPosBasedData.at(i), BoardPosBasedData.at(0)), i));
+            dist_idx_pair.push_back(std::make_pair(Distance(BoardPosBasedData.at(i), BoardPosBasedData.at(0)), i));
         }
         std::vector<std::tuple<double, double, double>> _BoardPosBasedData;
-        std::sort(ins.begin(), ins.end());
+        std::sort(dist_idx_pair.begin(), dist_idx_pair.end());
         for(int i = 0;i < 4;i++){
-            _BoardPosBasedData.push_back(BoardPosBasedData.at(ins.at(i).second));
+            _BoardPosBasedData.push_back(BoardPosBasedData.at(dist_idx_pair.at(i).second));
         }
         BoardPosBasedData = _BoardPosBasedData;
         int idx[] = {0, 1, 3, 2, 0};
@@ -658,21 +600,21 @@ void Detection::detectBoard(){
         }
     }while(is_dispersion);
 
-    std::vector<std::pair<float, int>> ins;
+    std::vector<std::pair<float, int>> dist_idx_pair;
     for(int i = 0;i < 4;i++){
-        ins.push_back(std::make_pair(Distance(BoardPosBasedData.at(i), std::make_tuple(0, 0, 0)), i));
+        dist_idx_pair.push_back(std::make_pair(Distance(BoardPosBasedData.at(i), std::make_tuple(0, 0, 0)), i));
     }
-    auto q = *std::min_element(ins.begin(), ins.end());
+    auto q = *std::min_element(dist_idx_pair.begin(), dist_idx_pair.end());
     int _i = q.second;
     std::swap(BoardPosBasedData.at(_i), BoardPosBasedData.at(0));
     std::vector<std::tuple<double, double, double>> _BoardPosBasedData;
-    ins.clear();
+    dist_idx_pair.clear();
     for(int i = 0;i < 4;i++){
-        ins.push_back(std::make_pair(Distance(BoardPosBasedData.at(i), BoardPosBasedData.at(0)), i));
+        dist_idx_pair.push_back(std::make_pair(Distance(BoardPosBasedData.at(i), BoardPosBasedData.at(0)), i));
     }
-    std::sort(ins.begin(), ins.end());
+    std::sort(dist_idx_pair.begin(), dist_idx_pair.end());
     for(int i = 0;i < 4;i++){
-        _BoardPosBasedData.push_back(BoardPosBasedData.at(ins.at(i).second));
+        _BoardPosBasedData.push_back(BoardPosBasedData.at(dist_idx_pair.at(i).second));
     }
     if(std::get<0>(_BoardPosBasedData.at(1)) < std::get<0>(_BoardPosBasedData.at(2))){
         std::swap(_BoardPosBasedData.at(1), _BoardPosBasedData.at(2));
@@ -726,42 +668,6 @@ std::tuple<float, float, float> Detection::translatePlanePoint(std::tuple<float,
     z -= std::get<2>(BoardPosBasedData.at(0));
 
     return std::make_tuple((x * calc_x1 + y * calc_y1 + z * calc_z1) / distance_A, (x * calc_x2 + y * calc_y2 + z * calc_z2) / distance_B, (x * outer_x + y * outer_y + z * outer_z) / distance_A / distance_B);
-}
-void Detection::test_opencv(){
-     // Declare depth colorizer for pretty visualization of depth data
-    rs2::colorizer color_map;
-
-    // Declare RealSense pipeline, encapsulating the actual device and sensor
-    // Start streaming with default recommended configuration
-    pipe.start();
-
-    using namespace cv;
-    const auto window_name = "Display Image";
-    namedWindow(window_name, WINDOW_AUTOSIZE);
-
-    while (waitKey(1) < 0 && getWindowProperty(window_name, WND_PROP_AUTOSIZE) >= 0)
-    {
-        rs2::frameset data = pipe.wait_for_frames(); // Wait for next set of frames from the camera
-        rs2::frame depth = data.get_depth_frame().apply_filter(color_map);
-
-        // Query frame size (width and height)
-        const int w = depth.as<rs2::video_frame>().get_width();
-        const int h = depth.as<rs2::video_frame>().get_height();
-
-        // Create OpenCV matrix of size (w,h) from the colorized depth data
-        Mat image(Size(w, h), CV_8UC3, (void*)depth.get_data(), Mat::AUTO_STEP);
-
-        float* _depth = (float*)depth.get_data();
-
-        for(int i = 0;;i++){
-            std::cout<<i<<" : "<<_depth[i]<<std::endl;
-        }
-
-        // Update the window with new data
-        imshow(window_name, image);
-    }
-
-    return;
 }
 float Detection::inner_product(std::tuple<float, float, float> a, std::tuple<float, float, float> b){
     return std::get<0>(a) * std::get<0>(b) + std::get<1>(a) * std::get<1>(b) + std::get<2>(a) * std::get<2>(b);

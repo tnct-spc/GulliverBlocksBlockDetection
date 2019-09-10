@@ -69,5 +69,4 @@ public:
 
  
 
-    void test_opencv();
 };
