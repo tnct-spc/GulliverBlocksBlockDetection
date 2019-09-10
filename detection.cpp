@@ -372,7 +372,7 @@ std::pair<std::vector<std::tuple<int, int, int>>, std::vector<std::tuple<int, in
             while(true){
                 auto itr = field.at(i).at(j).upper_bound(high);
                 if(itr == field.at(i).at(j).end())break;
-                remove.push_back(std::make_tuple(i, j, *itr));
+                remove.push_back(std::make_tuple(i, *itr, j));
                 field.at(i).at(j).erase(itr);
             }
             if(high != 0 && field.at(i).at(j).find(high) == field.at(i).at(j).end()){
