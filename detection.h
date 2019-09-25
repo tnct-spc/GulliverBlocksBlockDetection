@@ -53,7 +53,7 @@ public:
 
 
     Detection();
-    std::pair<std::vector<std::tuple<int, int, int>>, std::vector<std::tuple<int, int, int>>>  singleDetect(); //Widrh, Height, Depth
+    std::pair<std::vector<std::tuple<int, int, int>>, std::vector<std::tuple<int, int, int>>>  detect(); //Widrh, Height, Depth
     std::vector<std::tuple<float, float, float>> getDepth();
     std::vector<std::pair<std::tuple<float, float, float>, std::tuple<int, int, int>>> getDepthAndColor();
 
