@@ -10,9 +10,9 @@ void Manager::RunSingleDetection(){
     std::cout<<"Finish constractor"<<std::endl;
     int cnt = 0;
     while(1){
-        std::pair<std::vector<std::tuple<int, int, int>>, std::vector<std::tuple<int,int,int>>> detect_info = detection.singleDetect();
+        std::pair<std::vector<std::pair<std::tuple<int, int, int>, int>>, std::vector<std::tuple<int,int,int>>> detect_info = detection.singleDetect();
         for(int i = 0;i < detect_info.first.size();i++){
-            std::cout<<std::get<0>(detect_info.first.at(i))<<" "<<std::get<1>(detect_info.first.at(i))<<" "<<std::get<2>(detect_info.first.at(i))<<std::endl;
+            std::cout<<std::get<0>(detect_info.first.at(i).first)<<" "<<std::get<1>(detect_info.first.at(i).first)<<" "<<std::get<2>(detect_info.first.at(i).first)<<std::endl;
         }
         //std::cout<<std::endl;
         std::cout<<detect_info.first.size()<<": Added"<<std::endl;
@@ -28,6 +28,7 @@ void Manager::RunSingleDetection(){
     
 }
 
+/*
 void Manager::RunTestCurl(){
     std::string url = "https://gulliverblocks.herokuapp.com/add_blocks/1bfdd6d5-8d95-49c4-ad6f-a6a2a700b438/";
     std::pair<std::vector<std::tuple<int, int, int>>, std::vector<std::tuple<int, int, int>>> vec;
@@ -36,3 +37,4 @@ void Manager::RunTestCurl(){
 
     Poster.postJson(url, vec);
 }
+*/

@@ -181,12 +181,16 @@ std::vector<std::pair<std::tuple<float, float, float>, std::tuple<int, int, int>
     return data;
 }
 
-std::pair<std::vector<std::tuple<int, int, int>>, std::vector<std::tuple<int, int, int>>> Detection::singleDetect(){
+std::pair<std::vector<std::pair<std::tuple<int, int, int>, int>>, std::vector<std::tuple<int, int, int>>> Detection::singleDetect(){
 
     int t_num = 6;
     std::vector<std::vector<std::vector<std::vector<float>>>> multiframe_data = std::vector<std::vector<std::vector<std::vector<float>>>>(BoardEdgeNum, std::vector<std::vector<std::vector<float>>>(BoardEdgeNum, std::vector<std::vector<float>>(t_num, std::vector<float>({}))));
     //std::vector<std::vector<bool>> hand_flag(BoardEdgeNum, std::vector<bool>(BoardEdgeNum, true)); //手の判定
     std::vector<std::vector<std::vector<float>>> data = std::vector<std::vector<std::vector<float>>>(BoardEdgeNum, std::vector<std::vector<float>>(BoardEdgeNum, std::vector<float>({})));
+    std::vector<std::vector<std::vector<int>>> RGB_R = std::vector<std::vector<std::vector<int>>>(BoardEdgeNum, std::vector<std::vector<int>>(BoardEdgeNum, std::vector<int>({})));
+    std::vector<std::vector<std::vector<int>>> RGB_G = std::vector<std::vector<std::vector<int>>>(BoardEdgeNum, std::vector<std::vector<int>>(BoardEdgeNum, std::vector<int>({})));
+    std::vector<std::vector<std::vector<int>>> RGB_B = std::vector<std::vector<std::vector<int>>>(BoardEdgeNum, std::vector<std::vector<int>>(BoardEdgeNum, std::vector<int>({})));
+
     std::cout<<"getting data now"<<std::endl;
     for(int i = 0;i < t_num;i++){
         std::vector<std::pair<std::tuple<float, float, float>, std::tuple<int, int, int>>> depth_data = getDepthAndColor();
@@ -194,118 +198,59 @@ std::pair<std::vector<std::tuple<int, int, int>>, std::vector<std::tuple<int, in
             float x = std::get<0>(d.first);
             float y = std::get<1>(d.first);
             float z = std::get<2>(d.first);
+            int r = std::get<0>(d.second);
+            int g = std::get<1>(d.second);
+            int b = std::get<2>(d.second);
+
             if(0.0 <= x && x < BoardEdgeLen && 0.0 <= y && y < BoardEdgeLen){
                 if(std::floor(x / BlockEdgeLen) >= BoardEdgeNum || std::floor(y / BlockEdgeLen) >= BoardEdgeNum || std::floor(y / BlockEdgeLen) < 0 || std::floor(x / BlockEdgeLen) < 0){
                     std::cerr<<"detection.cpp getDepth関数内で配列外参照だよ！！"<<std::floor(x / BlockEdgeLen) << " "<<std::floor(y / BlockEdgeLen) <<std::endl;
                     std::abort();
                 }
+                
                 if(!(0.2 < x / BlockEdgeLen - std::floor(x / BlockEdgeLen) && x / BlockEdgeLen - std::floor(x / BlockEdgeLen) < 0.8))continue; //あまり境界に近くないほうがよい
                 if(!(0.2 < y / BlockEdgeLen - std::floor(y / BlockEdgeLen) && y / BlockEdgeLen - std::floor(y / BlockEdgeLen) < 0.8))continue; //あまり境界に近くないほうがよい
                 data.at(std::floor(x / BlockEdgeLen)).at(std::floor(y / BlockEdgeLen)).emplace_back(z);
                 multiframe_data.at(std::floor(x / BlockEdgeLen)).at(std::floor(y / BlockEdgeLen)).at(i).emplace_back(z);
+                RGB_R.at(std::floor(x / BlockEdgeLen)).at(std::floor(y / BlockEdgeLen)).emplace_back(r);
+                RGB_G.at(std::floor(x / BlockEdgeLen)).at(std::floor(y / BlockEdgeLen)).emplace_back(g);
+                RGB_B.at(std::floor(x / BlockEdgeLen)).at(std::floor(y / BlockEdgeLen)).emplace_back(b);
             }
         }
     }
     std::cout<<"finish get data"<<std::endl;
 
-    /*
-    for(int i = 0;i < BoardEdgeNum;i++){
-        for(int j = 0;j < BoardEdgeNum;j++){
-            std::vector<float> front;
-            std::vector<float> back;
-            float front_ave;
-            float back_ave;
-            for(int k = 0;k < t_num/2;k++){
-                for(auto x : multiframe_data.at(i).at(j).at(k))front.push_back(x);
-            }
-            std::vector<float> dis_data = front;
-            float sum = std::accumulate(dis_data.begin(), dis_data.end(), 0.0); 
-
-            float average = sum / dis_data.size();
-
-            float bunsan = 0;
-            for(float a : dis_data){
-                bunsan += std::pow(average - a, 2);
-            }
-            bunsan /= dis_data.size();
-            float hensa = std::sqrt(bunsan);
-            float t_average = 0;
-            int addcnt = 0;
-            for(auto x : dis_data){
-                if(((x - average) / hensa) < 2){
-                    t_average += x;
-                    addcnt++;
-                }
-            }
-            front_ave = t_average / addcnt;
-            for(int k = t_num;k < t_num;k++){
-                for(auto x : multiframe_data.at(i).at(j).at(k))front.push_back(x);
-            }
-
-            dis_data = back;
-            sum = std::accumulate(dis_data.begin(), dis_data.end(), 0.0); 
-
-            average = sum / dis_data.size();
-
-            bunsan = 0;
-            for(float a : dis_data){
-                bunsan += std::pow(average - a, 2);
-            }
-            bunsan /= dis_data.size();
-            hensa = std::sqrt(bunsan);
-            t_average = 0;
-            addcnt = 0;
-            for(auto x : dis_data){
-                if(((x - average) / hensa) < 2){
-                    t_average += x;
-                    addcnt++;
-                }
-            }
-            back_ave = t_average / addcnt;
-            front_ave -= based_data.at(i).at(j);
-            back_ave -= based_data.at(i).at(j);
-            //前3フレームと後ろ3フレームの平均が2ブロック以上離れていたら切ってみる
-            if(abs(back_ave - front_ave) / BlockHigh >= 2){
-                hand_flag.at(i).at(j) = false;
-                std::cout<<"disable detect pos("<<i<<","<<j<<")"<<std::endl;
-            }
-
-        }
-    }
-    */
-
     //cv::Mat M(960, 960, CV_8UC3, cv::Scalar(0,0,0));
     //std::cout<< std::setprecision(3);
     std::vector<float> depth_data_list;
-    std::vector<std::tuple<int, int, int>> add;
+    std::vector<std::pair<std::tuple<int, int, int>, int>> add;
     std::vector<std::tuple<int, int, int>> remove;
     for(int i = 0;i < BoardEdgeNum;i++){
         for(int j = 0;j < BoardEdgeNum;j++){
       //      if(!hand_flag.at(i).at(j))continue;    
             std::vector<float> grid_data = data.at(i).at(j);
-            float sum = std::accumulate(grid_data.begin(), grid_data.end(), 0.0); 
 
-            float average = sum / grid_data.size();
+            std::vector<int> grid_data_r = RGB_R.at(i).at(j);
+            std::vector<int> grid_data_g = RGB_G.at(i).at(j);
+            std::vector<int> grid_data_b = RGB_B.at(i).at(j);
+        
+            int r = grid_data_r.at(grid_data_r.size() / 2);
+            int g = grid_data_g.at(grid_data_g.size() / 2);
+            int b = grid_data_b.at(grid_data_b.size() / 2);
 
-            float bunsan = 0;
-            //std::cout<<i<<" "<<j<<" "<<dis_data.size()<<std::endl;
-            if(!grid_data.size())continue;
-            for(float a : grid_data){
-                bunsan += std::pow(average - a, 2);
-            }
-            bunsan /= grid_data.size();
-            float hensa = std::sqrt(bunsan);
-            float t_average = 0;
-            int addcnt = 0;
-            for(auto x : grid_data){
-                if(((x - average) / hensa) < 2){
-                    t_average += x;
-                    addcnt++;
+            int color = 0;
+            int manhattan_distance = 1e9;
+            for(int k = 0;k < BlockColors.size();k++){
+                if(abs(r - std::get<0>(BlockColors.at(k))) + abs(g - std::get<1>(BlockColors.at(k))) + abs(b - std::get<2>(BlockColors.at(k))) < manhattan_distance){
+                    manhattan_distance = abs(r - std::get<0>(BlockColors.at(k))) + abs(g - std::get<1>(BlockColors.at(k))) + abs(b - std::get<2>(BlockColors.at(k)));
+                    color = k;
                 }
             }
-            //average = t_average / addcnt;
+
+
             std::sort(grid_data.begin(), grid_data.end());
-            average = grid_data.at(grid_data.size() / 2);
+            float average = grid_data.at(grid_data.size() / 2);
+
             average -= based_data.at(i).at(j);
             average /= BlockHigh;
             depth_data_list.push_back(average);
@@ -319,7 +264,7 @@ std::pair<std::vector<std::tuple<int, int, int>>, std::vector<std::tuple<int, in
             }
             if(high != 0 && field.at(i).at(j).find(high) == field.at(i).at(j).end()){
                 field.at(i).at(j).insert(high);
-                add.push_back(std::make_tuple(i, high, j)); //x z y
+                add.push_back(std::make_pair(std::make_tuple(i, high, j), color)); //x z y
             }
             if(std::isnan(average)){
                 std::cout<<"average is nan"<<std::endl;

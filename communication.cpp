@@ -1,17 +1,16 @@
 #include"communication.h"
 
-void Communication::postJson(std::string url, std::pair<std::vector<std::tuple<int,int,int>>, std::vector<std::tuple<int,int,int>>> block_data){
-    int color_id = 0;
+void Communication::postJson(std::string url, std::pair<std::vector<std::pair<std::tuple<int,int,int>, int>>, std::vector<std::tuple<int,int,int>>> block_data){
     std::string json = "{\"blocks\":[";
    
     if (!block_data.first.empty())
     {
         for (size_t i = 0; i < block_data.first.size(); i++){
             json = json + "{\"put\":" + "true" \
-                        + ",\"colorID\":" + "\""+ std::to_string(color_id) + "\"" \
-                        + ",\"x\":" + std::to_string(std::get<0>(block_data.first.at(i))) \
-                        + ",\"y\":" + std::to_string(std::get<1>(block_data.first.at(i))) \
-                        + ",\"z\":" + std::to_string(std::get<2>(block_data.first.at(i))) \
+                        + ",\"colorID\":" + "\""+ std::to_string(block_data.first.at(i).second) + "\"" \
+                        + ",\"x\":" + std::to_string(std::get<0>(block_data.first.at(i).first)) \
+                        + ",\"y\":" + std::to_string(std::get<1>(block_data.first.at(i).first)) \
+                        + ",\"z\":" + std::to_string(std::get<2>(block_data.first.at(i).first)) \
                         + "}";
             if (!(i + 1 == block_data.first.size() && block_data.second.empty()))
             {
