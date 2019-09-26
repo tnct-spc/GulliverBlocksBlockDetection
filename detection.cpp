@@ -151,6 +151,8 @@ std::vector<std::pair<std::tuple<float, float, float>, std::tuple<int, int, int>
 
     const double scale = depth_sensor.get_depth_scale();
 
+    std::cout<<scale<<std::endl; //どうやらここでしかdevを使ってないので、もしこれを定数として扱えるならdevをメンバで持つ必要はなくなる
+
     auto z_pixels = reinterpret_cast<const uint16_t*>(depth.get_data());
 
     rs2_intrinsics intr = frames.get_profile().as<rs2::video_stream_profile>().get_intrinsics();
