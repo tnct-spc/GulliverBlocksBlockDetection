@@ -8,6 +8,8 @@ Detection::Detection(){
     profile = pipe.start(cfg);
     dev = profile.get_device();
 
+    getDepthAndColor();
+
     detectBoard();
     based_data = std::vector<std::vector<double>>(BoardEdgeNum, std::vector<double>(BoardEdgeNum, 0));
     std::vector<std::vector<std::vector<float>>> data = std::vector<std::vector<std::vector<float>>>(BoardEdgeNum, std::vector<std::vector<float>>(BoardEdgeNum));
@@ -151,7 +153,9 @@ std::vector<std::pair<std::tuple<float, float, float>, std::tuple<int, int, int>
 
     const double scale = depth_sensor.get_depth_scale();
 
-    std::cout<<scale<<std::endl; //どうやらここでしかdevを使ってないので、もしこれを定数として扱えるならdevをメンバで持つ必要はなくなる
+    std::cout<<"scale"<<scale<<std::endl; //どうやらここでしかdevを使ってないので、もしこれを定数として扱えるならdevをメンバで持つ必要はなくなる
+    std::cout<<"sensor num"<<dev.query_sensors().size()<<std::endl;
+
 
     auto z_pixels = reinterpret_cast<const uint16_t*>(depth.get_data());
 
