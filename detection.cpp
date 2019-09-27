@@ -570,7 +570,7 @@ void Detection::detectBoard(){
     for(int i = 0;i < 4;i++){
         _BoardPosBasedData.push_back(BoardPosBasedData.at(dist_idx_pair.at(i).second));
     }
-    if(std::get<0>(_BoardPosBasedData.at(1)) > std::get<0>(_BoardPosBasedData.at(2))){
+    if(std::get<0>(_BoardPosBasedData.at(1)) > std::get<0>(_BoardPosBasedData.at(2))){ //ここ本質で、x座標が小さいほうがy軸によるように調整している(そうしないと右手系左手系のごちゃごちゃで、z座標がひっくり返ることがあるため)
         std::swap(_BoardPosBasedData.at(1), _BoardPosBasedData.at(2));
     }
     BoardPosBasedData = _BoardPosBasedData;
