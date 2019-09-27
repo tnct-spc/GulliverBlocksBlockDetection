@@ -183,8 +183,8 @@ std::vector<std::pair<std::tuple<float, float, float>, std::tuple<int, int, int>
 
 std::pair<std::vector<std::pair<std::tuple<int, int, int>, int>>, std::vector<std::tuple<int, int, int>>> Detection::singleDetect(){
 
-    int t_num = 3;
-    std::vector<std::vector<std::vector<std::vector<float>>>> multiframe_data = std::vector<std::vector<std::vector<std::vector<float>>>>(BoardEdgeNum, std::vector<std::vector<std::vector<float>>>(BoardEdgeNum, std::vector<std::vector<float>>(t_num, std::vector<float>({}))));
+    int frame_num = 3;
+    std::vector<std::vector<std::vector<std::vector<float>>>> multiframe_data = std::vector<std::vector<std::vector<std::vector<float>>>>(BoardEdgeNum, std::vector<std::vector<std::vector<float>>>(BoardEdgeNum, std::vector<std::vector<float>>(frame_num, std::vector<float>({}))));
     //std::vector<std::vector<bool>> hand_flag(BoardEdgeNum, std::vector<bool>(BoardEdgeNum, true)); //手の判定
     std::vector<std::vector<std::vector<float>>> data = std::vector<std::vector<std::vector<float>>>(BoardEdgeNum, std::vector<std::vector<float>>(BoardEdgeNum, std::vector<float>({})));
     std::vector<std::vector<std::vector<int>>> RGB_R = std::vector<std::vector<std::vector<int>>>(BoardEdgeNum, std::vector<std::vector<int>>(BoardEdgeNum, std::vector<int>({})));
@@ -192,7 +192,7 @@ std::pair<std::vector<std::pair<std::tuple<int, int, int>, int>>, std::vector<st
     std::vector<std::vector<std::vector<int>>> RGB_B = std::vector<std::vector<std::vector<int>>>(BoardEdgeNum, std::vector<std::vector<int>>(BoardEdgeNum, std::vector<int>({})));
 
     std::cout<<"getting data now"<<std::endl;
-    for(int i = 0;i < t_num;i++){
+    for(int i = 0;i < frame_num;i++){
         std::vector<std::pair<std::tuple<float, float, float>, std::tuple<int, int, int>>> depth_data = getDepthAndColor();
         for(auto d : depth_data){
             float x = std::get<0>(d.first);
@@ -221,7 +221,7 @@ std::pair<std::vector<std::pair<std::tuple<int, int, int>, int>>, std::vector<st
     }
     std::cout<<"finish get data"<<std::endl;
 
-    cv::Mat M(960, 960, CV_8UC3, cv::Scalar(0,0,0));
+   // cv::Mat M(960, 960, CV_8UC3, cv::Scalar(0,0,0));
     std::cout<< std::setprecision(3);
     std::vector<float> depth_data_list;
     std::vector<int> color_distance_list;
@@ -272,7 +272,7 @@ std::pair<std::vector<std::pair<std::tuple<int, int, int>, int>>, std::vector<st
             if(std::isnan(average)){
                 std::cout<<"average is nan"<<std::endl;
             }
-            
+            /*
             for(int p = i*20 ; p < 20+i*20 ; p++){
                 cv::Vec3b* ptr = M.ptr<cv::Vec3b>( p );
                 for(int q = j*20 ; q < 20+j*20 ; q++){
@@ -281,7 +281,7 @@ std::pair<std::vector<std::pair<std::tuple<int, int, int>, int>>, std::vector<st
                     //ptr[q] = cv::Vec3b(high *5000+100, high *5000+100, high *5000+100);
                 }
             }
-            
+            */
         }
     }
     std::sort(depth_data_list.begin(), depth_data_list.end());
@@ -295,8 +295,8 @@ std::pair<std::vector<std::pair<std::tuple<int, int, int>, int>>, std::vector<st
     for(int i = 0 ; i < std::min(10, (int)color_distance_list.size()) ; i++){
         std::cout<<i<<"th : "<<color_distance_list.at(i)<<std::endl;
     }
-    cv::imshow("Visualizer", M);
-    int c = cv::waitKey();
+    //cv::imshow("Visualizer", M);
+    //int c = cv::waitKey();
     return std::make_pair(add, remove);
 }
 
