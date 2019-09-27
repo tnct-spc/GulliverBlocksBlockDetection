@@ -183,7 +183,7 @@ std::vector<std::pair<std::tuple<float, float, float>, std::tuple<int, int, int>
 
 std::pair<std::vector<std::pair<std::tuple<int, int, int>, int>>, std::vector<std::tuple<int, int, int>>> Detection::singleDetect(){
 
-    int t_num = 6;
+    int t_num = 3;
     std::vector<std::vector<std::vector<std::vector<float>>>> multiframe_data = std::vector<std::vector<std::vector<std::vector<float>>>>(BoardEdgeNum, std::vector<std::vector<std::vector<float>>>(BoardEdgeNum, std::vector<std::vector<float>>(t_num, std::vector<float>({}))));
     //std::vector<std::vector<bool>> hand_flag(BoardEdgeNum, std::vector<bool>(BoardEdgeNum, true)); //手の判定
     std::vector<std::vector<std::vector<float>>> data = std::vector<std::vector<std::vector<float>>>(BoardEdgeNum, std::vector<std::vector<float>>(BoardEdgeNum, std::vector<float>({})));
@@ -220,9 +220,10 @@ std::pair<std::vector<std::pair<std::tuple<int, int, int>, int>>, std::vector<st
     }
     std::cout<<"finish get data"<<std::endl;
 
-    //cv::Mat M(960, 960, CV_8UC3, cv::Scalar(0,0,0));
-    //std::cout<< std::setprecision(3);
+    cv::Mat M(960, 960, CV_8UC3, cv::Scalar(0,0,0));
+    std::cout<< std::setprecision(3);
     std::vector<float> depth_data_list;
+    std::vector<int> color_distance_list;
     std::vector<std::pair<std::tuple<int, int, int>, int>> add;
     std::vector<std::tuple<int, int, int>> remove;
     for(int i = 0;i < BoardEdgeNum;i++){
@@ -239,14 +240,14 @@ std::pair<std::vector<std::pair<std::tuple<int, int, int>, int>>, std::vector<st
             int b = grid_data_b.at(grid_data_b.size() / 2);
 
             int color = 0;
-            int manhattan_distance = 1e9;
+            int color_distance = 1e9;
             for(int k = 0;k < BlockColors.size();k++){
-                if(abs(r - std::get<0>(BlockColors.at(k))) + abs(g - std::get<1>(BlockColors.at(k))) + abs(b - std::get<2>(BlockColors.at(k))) < manhattan_distance){
-                    manhattan_distance = abs(r - std::get<0>(BlockColors.at(k))) + abs(g - std::get<1>(BlockColors.at(k))) + abs(b - std::get<2>(BlockColors.at(k)));
+                if(abs(r - std::get<0>(BlockColors.at(k))) + abs(g - std::get<1>(BlockColors.at(k))) + abs(b - std::get<2>(BlockColors.at(k))) < color_distance){
+                    color_distance = pow(r - std::get<0>(BlockColors.at(k)), 2) + pow(g - std::get<1>(BlockColors.at(k)), 2) + pow(b - std::get<2>(BlockColors.at(k)), 2);
                     color = k;
                 }
             }
-
+            color_distance_list.push_back(color_distance);
 
             std::sort(grid_data.begin(), grid_data.end());
             float average = grid_data.at(grid_data.size() / 2);
@@ -269,7 +270,7 @@ std::pair<std::vector<std::pair<std::tuple<int, int, int>, int>>, std::vector<st
             if(std::isnan(average)){
                 std::cout<<"average is nan"<<std::endl;
             }
-            /*
+            
             for(int p = i*20 ; p < 20+i*20 ; p++){
                 cv::Vec3b* ptr = M.ptr<cv::Vec3b>( p );
                 for(int q = j*20 ; q < 20+j*20 ; q++){
@@ -278,16 +279,23 @@ std::pair<std::vector<std::pair<std::tuple<int, int, int>, int>>, std::vector<st
                     //ptr[q] = cv::Vec3b(high *5000+100, high *5000+100, high *5000+100);
                 }
             }
-            */
+            
         }
     }
     std::sort(depth_data_list.begin(), depth_data_list.end());
+    std::sort(color_distance_list.begin(), color_distance_list.end());
     std::reverse(depth_data_list.begin(), depth_data_list.end());
+    std::reverse(color_distance_list.begin(), color_distance_list.end());
+    std::cout<<"depth"<<std::endl;
     for(int i = 0;i < std::min(10, (int)depth_data_list.size());i++){
         std::cout<<i<<"th : "<<depth_data_list.at(i)<<std::endl;
     }
-    //cv::imshow("Visualizer", M);
-    //int c = cv::waitKey();
+    std::cout<<"color"<<std::endl;
+    for(int i = 0 ; i < std::min(10, (int)color_distance_list.size()) ; i++){
+        std::cout<<i<<"th : "<<color_distance_list.at(i)<<std::endl;
+    }
+    cv::imshow("Visualizer", M);
+    int c = cv::waitKey();
     return std::make_pair(add, remove);
 }
 
