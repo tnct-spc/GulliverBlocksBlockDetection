@@ -205,7 +205,8 @@ std::pair<std::vector<std::pair<std::tuple<int, int, int>, int>>, std::vector<st
             if(0.0 <= x && x < BoardEdgeLen && 0.0 <= y && y < BoardEdgeLen){
                 if(std::floor(x / BlockEdgeLen) >= BoardEdgeNum || std::floor(y / BlockEdgeLen) >= BoardEdgeNum || std::floor(y / BlockEdgeLen) < 0 || std::floor(x / BlockEdgeLen) < 0){
                     std::cerr<<"detection.cpp getDepth関数内で配列外参照だよ！！"<<std::floor(x / BlockEdgeLen) << " "<<std::floor(y / BlockEdgeLen) <<std::endl;
-                    std::abort();
+                    //std::abort();
+                    continue;
                 }
                 
                 if(!(0.2 < x / BlockEdgeLen - std::floor(x / BlockEdgeLen) && x / BlockEdgeLen - std::floor(x / BlockEdgeLen) < 0.8))continue; //あまり境界に近くないほうがよい
@@ -229,6 +230,7 @@ std::pair<std::vector<std::pair<std::tuple<int, int, int>, int>>, std::vector<st
     for(int i = 0;i < BoardEdgeNum;i++){
         for(int j = 0;j < BoardEdgeNum;j++){
       //      if(!hand_flag.at(i).at(j))continue;    
+            if(!data.at(i).at(j).size())continue;
             std::vector<float> grid_data = data.at(i).at(j);
 
             std::vector<int> grid_data_r = RGB_R.at(i).at(j);
@@ -242,8 +244,8 @@ std::pair<std::vector<std::pair<std::tuple<int, int, int>, int>>, std::vector<st
             int color = 0;
             int color_distance = 1e9;
             for(int k = 0;k < BlockColors.size();k++){
-                if(abs(r - std::get<0>(BlockColors.at(k))) + abs(g - std::get<1>(BlockColors.at(k))) + abs(b - std::get<2>(BlockColors.at(k))) < color_distance){
-                    color_distance = pow(r - std::get<0>(BlockColors.at(k)), 2) + pow(g - std::get<1>(BlockColors.at(k)), 2) + pow(b - std::get<2>(BlockColors.at(k)), 2);
+                if(std::pow(r - std::get<0>(BlockColors.at(k)), 2) + std::pow(g - std::get<1>(BlockColors.at(k)), 2) + std::pow(b - std::get<2>(BlockColors.at(k)), 2) < color_distance){
+                    color_distance = std::pow(r - std::get<0>(BlockColors.at(k)), 2) + std::pow(g - std::get<1>(BlockColors.at(k)), 2) + std::pow(b - std::get<2>(BlockColors.at(k)), 2);
                     color = k;
                 }
             }
@@ -285,7 +287,6 @@ std::pair<std::vector<std::pair<std::tuple<int, int, int>, int>>, std::vector<st
     std::sort(depth_data_list.begin(), depth_data_list.end());
     std::sort(color_distance_list.begin(), color_distance_list.end());
     std::reverse(depth_data_list.begin(), depth_data_list.end());
-    std::reverse(color_distance_list.begin(), color_distance_list.end());
     std::cout<<"depth"<<std::endl;
     for(int i = 0;i < std::min(10, (int)depth_data_list.size());i++){
         std::cout<<i<<"th : "<<depth_data_list.at(i)<<std::endl;
@@ -569,7 +570,7 @@ void Detection::detectBoard(){
     for(int i = 0;i < 4;i++){
         _BoardPosBasedData.push_back(BoardPosBasedData.at(dist_idx_pair.at(i).second));
     }
-    if(std::get<0>(_BoardPosBasedData.at(1)) < std::get<0>(_BoardPosBasedData.at(2))){
+    if(std::get<0>(_BoardPosBasedData.at(1)) > std::get<0>(_BoardPosBasedData.at(2))){
         std::swap(_BoardPosBasedData.at(1), _BoardPosBasedData.at(2));
     }
     BoardPosBasedData = _BoardPosBasedData;
