@@ -6,7 +6,7 @@
 
 class Communication{
 public:
-    void postJson(std::string url, std::pair<std::vector<std::tuple<int,int,int>>, std::vector<std::tuple<int,int,int>>> block_data);
+    void postJson(std::string url, std::pair<std::vector<std::pair<std::tuple<int,int,int>, int>>, std::vector<std::tuple<int,int,int>>> block_data);
 
     bool isDetection(std::string url);
 
