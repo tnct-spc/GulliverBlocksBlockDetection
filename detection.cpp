@@ -59,26 +59,8 @@ Detection::Detection(){
     for(int i = 0;i < BoardEdgeNum;i++){
         for(int j = 0;j < BoardEdgeNum;j++){
             std::vector<float> dis_data = data.at(i).at(j);
-            float sum = std::accumulate(dis_data.begin(), dis_data.end(), 0.0); 
-
-            float average = sum / dis_data.size();
-
-            float bunsan = 0;
-            for(float a : dis_data){
-                bunsan += std::pow(average - a, 2);
-            }
-            bunsan /= dis_data.size();
-            float hensa = std::sqrt(bunsan);
-            float t_average = 0;
-            int addcnt = 0;
-            for(auto x : dis_data){
-                if(((x - average) / hensa) < 2){
-                    t_average += x;
-                    addcnt++;
-                }
-            }
-            average = t_average / addcnt;
-            based_data.at(i).at(j) = average;
+            std::sort(dis_data.begin(), dis_data.end());
+            based_data.at(i).at(j) = dis_data.at(dis_data.size() / 2);
         }
     }
     
