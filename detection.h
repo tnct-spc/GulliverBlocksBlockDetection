@@ -34,7 +34,7 @@ private:
     const std::vector<std::tuple<int, int, int>> BlockColors = { std::make_tuple(50, 50, 50), std::make_tuple(201, 26, 9), std::make_tuple(242, 205, 55), std::make_tuple(254, 138, 24), std::make_tuple(187, 232, 11), std::make_tuple(159, 195, 233), std::make_tuple(0, 85, 191), std::make_tuple(35, 120, 65), std::make_tuple(146, 57, 120), std::make_tuple(187, 233, 11) };
 
 public:
-    std::vector<std::tuple<double, double, double>> BoardPosBasedData;
+    std::vector<float3tuple> BoardPosBasedData;
     std::vector<std::vector<std::set<int>>> field;
     std::vector<std::vector<double>> based_data;
     rs2::pipeline pipe;
@@ -55,20 +55,30 @@ public:
 
 
     Detection();
+
     std::pair<std::vector<std::pair<std::tuple<int, int, int>, int>>, std::vector<std::tuple<int, int, int>>>  singleDetect(); //Widrh, Height, Depth
-    std::vector<std::tuple<float, float, float>> getDepth();
-    std::vector<std::pair<std::tuple<float, float, float>, std::tuple<int, int, int>>> getDepthAndColor();
+    std::vector<float3tuple> getDepth();
+    std::vector<std::pair<float3tuple, std::tuple<int, int, int>>> getDepthAndColor();
 
     void detectBoard();
-    std::tuple<float, float, float> translatePixelToP3DPoint(float x, float y);
-    std::tuple<float, float, float> translatePixelToP3DPoint(float x, float y, rs2_intrinsics& intr, rs2::depth_frame& depth);
+    float3tuple translatePixelToP3DPoint(float x, float y);
+    float3tuple translatePixelToP3DPoint(float x, float y, rs2_intrinsics& intr, rs2::depth_frame& depth);
 
-    std::tuple<float, float, float> translatePlanePoint(float x, float y, float z);
-    std::tuple<float, float, float> translatePlanePoint(std::tuple<float, float, float> point_pos);
+    float3tuple translatePlanePoint(float x, float y, float z);
+    float3tuple translatePlanePoint(float3tuple point_pos);
 
     float inner_product(std::tuple<float, float, float> a, std::tuple<float, float, float> b);
-    std::tuple<float, float, float> outer_product(std::tuple<float, float, float> a, std::tuple<float, float, float> b);
+    float3tuple outer_product(std::tuple<float, float, float> a, std::tuple<float, float, float> b);
 
- 
-
+   
 };
+struct float3tuple //std::tupleは遅い
+{
+    float x,y,z;
+    float3tuple(float a, float b, float c){
+        x = a;
+            y = b;
+            z = c;
+        }
+};
+
