@@ -20,6 +20,24 @@
 #include <algorithm>
 #include <numeric>
 #include <thread>
+#include <chrono>
+
+struct float3tuple //std::tupleは遅い
+{
+    float x,y,z;
+    float3tuple(){
+        x = 0;
+        y = 0;
+        z = 0;
+    }
+    float3tuple(float a, float b, float c){
+        x = a;
+        y = b;
+        z = c;
+    }
+    
+};
+
 
 class Detection{
 private:
@@ -31,7 +49,7 @@ private:
     const double BlockHigh = 0.009;
     const float BlockHighthresh = 0.5;
 
-    const std::vector<std::tuple<int, int, int>> BlockColors = { std::make_tuple(50, 50, 50), std::make_tuple(201, 26, 9), std::make_tuple(242, 205, 55), std::make_tuple(254, 138, 24), std::make_tuple(187, 232, 11), std::make_tuple(159, 195, 233), std::make_tuple(0, 85, 191), std::make_tuple(35, 120, 65), std::make_tuple(146, 57, 120), std::make_tuple(187, 233, 11) };
+    const std::vector<std::tuple<int, int, int>> BlockColors = { std::make_tuple(50, 50, 50), std::make_tuple(201, 26, 9), std::make_tuple(242, 205, 55), std::make_tuple(1e3, 1e3, 1e3), std::make_tuple(187, 232, 11), std::make_tuple(1e3, 1e3, 1e3), std::make_tuple(0, 85, 191), std::make_tuple(35, 120, 65), std::make_tuple(1e3, 1e3, 1e3), std::make_tuple(187, 233, 11) };
 
 public:
     std::vector<float3tuple> BoardPosBasedData;
@@ -41,17 +59,23 @@ public:
     rs2::config cfg;
     rs2::pipeline_profile profile;
     rs2::device dev;
-    double distance_A;
-    double distance_B;
-    double calc_x1;
-    double calc_x2;
-    double calc_y1;
-    double calc_y2;
-    double calc_z1;
-    double calc_z2;
-    double outer_x;
-    double outer_y;
-    double outer_z;
+    float distance_A;
+    float distance_B;
+    float calc_x0;
+    float calc_x1;
+    float calc_x2;
+    float calc_y0;
+    float calc_y1;
+    float calc_y2;
+    float calc_z0;
+    float calc_z1;
+    float calc_z2;
+    float outer_x;
+    float outer_y;
+    float outer_z;
+    rs2_error * e = nullptr;
+    float pixel[2];
+    float qpoint[3];
 
 
     Detection();
@@ -71,14 +95,5 @@ public:
     float3tuple outer_product(std::tuple<float, float, float> a, std::tuple<float, float, float> b);
 
    
-};
-struct float3tuple //std::tupleは遅い
-{
-    float x,y,z;
-    float3tuple(float a, float b, float c){
-        x = a;
-            y = b;
-            z = c;
-        }
 };
 

@@ -20,7 +20,7 @@ void Manager::RunSingleDetection(){
             std::cout<<std::get<0>(detect_info.second.at(i))<<" "<<std::get<1>(detect_info.second.at(i))<<" "<<std::get<2>(detect_info.second.at(i))<<std::endl;
         }
         std::cout<<detect_info.second.size()<<": Deleted"<<std::endl;
-        std::string url = "http://gulliverblocks.herokuapp.com/add_blocks/1bfdd6d5-8d95-49c4-ad6f-a6a2a700b438/";
+        std::string url = "http://gulliverblocks.herokuapp.com/add_blocks/73f8fd17-4e3a-4780-ab21-8ccfbe9dbc75/";
         Poster.postJson(url, detect_info);
         std::cout<<cnt<<std::endl;
         cnt++;
