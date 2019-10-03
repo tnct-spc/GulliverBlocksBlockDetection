@@ -3,11 +3,12 @@
 Detection::Detection()
 {
 
-    cfg.enable_stream(RS2_STREAM_COLOR, 1280, 720, RS2_FORMAT_RGB8, 30);
-    cfg.enable_stream(RS2_STREAM_DEPTH, 1280, 720, RS2_FORMAT_Z16, 30);
+    cfg.enable_stream(RS2_STREAM_COLOR, 1280, 720, RS2_FORMAT_RGB8, 5);
+    cfg.enable_stream(RS2_STREAM_DEPTH, 1280, 720, RS2_FORMAT_Z16, 5);
 
-    profile = pipe.start(cfg);
-    dev = profile.get_device();
+    pipe.start(cfg);
+
+    std::cout<<"usi"<<std::endl;
 
     detectBoard();
     based_data = std::vector<std::vector<double>>(BoardEdgeNum, std::vector<double>(BoardEdgeNum, 0));
@@ -192,10 +193,8 @@ std::vector<std::pair<float3tuple, std::tuple<int, int, int>>> Detection::getDep
     rs2::video_frame color_frame = aligned_frames.first(RS2_STREAM_COLOR);
     rs2::depth_frame depth = aligned_frames.get_depth_frame();
 
-    rs2::sensor sensor = dev.query_sensors()[0];
-    rs2::depth_sensor depth_sensor = sensor.as<rs2::depth_sensor>();
 
-    const double scale = depth_sensor.get_depth_scale();
+    const double scale = 0.001;
 
     auto z_pixels = reinterpret_cast<const uint16_t *>(depth.get_data());
 
@@ -267,9 +266,9 @@ std::pair<std::vector<std::pair<std::tuple<int, int, int>, int>>, std::vector<st
                     continue;
                 }
 
-                if (!(0.2 < x / BlockEdgeLen - std::floor(x / BlockEdgeLen) && x / BlockEdgeLen - std::floor(x / BlockEdgeLen) < 0.8))
+                if (!(0.3 < x / BlockEdgeLen - std::floor(x / BlockEdgeLen) && x / BlockEdgeLen - std::floor(x / BlockEdgeLen) < 0.7))
                     continue; //あまり境界に近くないほうがよい
-                if (!(0.2 < y / BlockEdgeLen - std::floor(y / BlockEdgeLen) && y / BlockEdgeLen - std::floor(y / BlockEdgeLen) < 0.8))
+                if (!(0.3 < y / BlockEdgeLen - std::floor(y / BlockEdgeLen) && y / BlockEdgeLen - std::floor(y / BlockEdgeLen) < 0.7))
                     continue; //あまり境界に近くないほうがよい
                 data.at(std::floor(x / BlockEdgeLen)).at(std::floor(y / BlockEdgeLen)).emplace_back(z);
                 //multiframe_data.at(std::floor(x / BlockEdgeLen)).at(std::floor(y / BlockEdgeLen)).at(i).emplace_back(z);
@@ -370,8 +369,8 @@ std::pair<std::vector<std::pair<std::tuple<int, int, int>, int>>, std::vector<st
     {
         std::cout << i << "th : " << color_distance_list.at(i).first << " " << color_distance_list.at(i).second << std::endl;
     }
-     cv::imshow("Visualizer", M);
-     int c = cv::waitKey();
+    //cv::imshow("Visualizer", M);
+    //int c = cv::waitKey();
     return std::make_pair(add, remove);
 }
 
@@ -471,8 +470,8 @@ void Detection::detectBoard()
             polylines(image, &p, &n, 1, true, cv::Scalar(0, 255, 0), 3, cv::LINE_AA);
         }
 
-        //    imshow("TestSquares", image);
-        //    int c = cv::waitKey();
+            imshow("TestSquares", image);
+            int c = cv::waitKey();
     };
     auto Distance = [](float3tuple a, float3tuple b) {
         float x1, y1, z1, x2, y2, z2;
@@ -601,7 +600,7 @@ void Detection::detectBoard()
 
             for (int i = 0; i < 4; i++)
             {
-                ProvisionalBoardPosBasedData.push_back(translatePixelToP3DPoint((float)frame_pos.at(i).first, (float)frame_pos.at(i).second, intr, depth));
+                ProvisionalBoardPosBasedData.push_back(translatePixelToP3DPoint((float)frame_pos.at(i).first, (float)frame_pos.at(i).second, intr, depth)); // なんかこの返り値が 0 0 0 になるケースがある。
                 std::cout << ProvisionalBoardPosBasedData.back().x << " " << ProvisionalBoardPosBasedData.back().y << " " << ProvisionalBoardPosBasedData.back().z << std::endl;
             }
             std::vector<std::pair<float, int>> dist_idx_pair;
@@ -614,6 +613,7 @@ void Detection::detectBoard()
             for (int i = 0; i < 4; i++)
             {
                 _BoardPosBasedData.push_back(ProvisionalBoardPosBasedData.at(dist_idx_pair.at(i).second));
+                std::cout<<dist_idx_pair.at(i).first<<std::endl;
             }
             ProvisionalBoardPosBasedData = _BoardPosBasedData;
             int idx[] = {0, 1, 3, 2, 0};

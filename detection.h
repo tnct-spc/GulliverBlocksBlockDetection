@@ -57,8 +57,7 @@ public:
     std::vector<std::vector<double>> based_data;
     rs2::pipeline pipe;
     rs2::config cfg;
-    rs2::pipeline_profile profile;
-    rs2::device dev;
+
     float distance_A;
     float distance_B;
     float calc_x0;
