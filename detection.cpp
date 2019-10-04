@@ -3,12 +3,10 @@
 Detection::Detection()
 {
 
-    cfg.enable_stream(RS2_STREAM_COLOR, 1280, 720, RS2_FORMAT_RGB8, 5);
-    cfg.enable_stream(RS2_STREAM_DEPTH, 1280, 720, RS2_FORMAT_Z16, 5);
+    cfg.enable_stream(RS2_STREAM_COLOR, 1280, 720, RS2_FORMAT_RGB8, 6);
+    cfg.enable_stream(RS2_STREAM_DEPTH, 1280, 720, RS2_FORMAT_Z16, 6);
 
     pipe.start(cfg);
-
-    std::cout<<"usi"<<std::endl;
 
     detectBoard();
     based_data = std::vector<std::vector<double>>(BoardEdgeNum, std::vector<double>(BoardEdgeNum, 0));
@@ -284,6 +282,7 @@ std::pair<std::vector<std::pair<std::tuple<int, int, int>, int>>, std::vector<st
     std::cout << std::setprecision(3);
     std::vector<float> depth_data_list;
     std::vector<std::pair<int, int>> color_distance_list;
+    std::vector<int> data_num_lists;
     std::vector<std::pair<std::tuple<int, int, int>, int>> add;
     std::vector<std::tuple<int, int, int>> remove;
     for (int i = 0; i < BoardEdgeNum; i++)
@@ -291,9 +290,20 @@ std::pair<std::vector<std::pair<std::tuple<int, int, int>, int>>, std::vector<st
         for (int j = 0; j < BoardEdgeNum; j++)
         {
             //      if(!hand_flag.at(i).at(j))continue;
+             for(int p = i*20 ; p < 20+i*20 ; p++){
+                cv::Vec3b* ptr = M.ptr<cv::Vec3b>( p );
+                for(int q = j*20 ; q < 20+j*20 ; q++){
+
+                    //ptr[q] = cv::Vec3b(median * BlockHigh * 5000 + 50, median * BlockHigh * 5000 + 50, median * BlockHigh * 5000+ 50);
+                    ptr[q] = cv::Vec3b(data.at(i).at(j).size(), data.at(i).at(j).size(), data.at(i).at(j).size());
+                }
+            }
+
             if (!data.at(i).at(j).size())
                 continue;
             std::vector<float> grid_data = data.at(i).at(j);
+
+            data_num_lists.push_back(data.at(i).at(j).size());
 
             std::vector<int> grid_data_r = RGB_R.at(i).at(j);
             std::vector<int> grid_data_g = RGB_G.at(i).at(j);
@@ -309,14 +319,12 @@ std::pair<std::vector<std::pair<std::tuple<int, int, int>, int>>, std::vector<st
             {
                 if (std::pow(r - std::get<0>(BlockColors.at(k)), 2) + std::pow(g - std::get<1>(BlockColors.at(k)), 2) + std::pow(b - std::get<2>(BlockColors.at(k)), 2) < color_distance)
                 {
-                    color_distance = std::pow(r - std::get<0>(BlockColors.at(k)), 2) + std::pow(g - std::get<1>(BlockColors.at(k)), 2) + std::pow(b - std::get<2>(BlockColors.at(k)), 2);
+                    color_distance = 2 * std::pow(r - std::get<0>(BlockColors.at(k)), 2) + 4 * std::pow(g - std::get<1>(BlockColors.at(k)), 2) + 3 * std::pow(b - std::get<2>(BlockColors.at(k)), 2);
                     color = k;
                 }
             }
-            /*
-            if (color_distance > 5000)
-                continue;
-                */
+            
+           
             color_distance_list.push_back({color_distance, color});
 
             std::sort(grid_data.begin(), grid_data.end());
@@ -335,6 +343,8 @@ std::pair<std::vector<std::pair<std::tuple<int, int, int>, int>>, std::vector<st
                 remove.push_back(std::make_tuple(i, *itr, j)); //x z y
                 field.at(i).at(j).erase(itr);
             }
+             if (color_distance > 10000)
+                continue;
             if (high != 0 && field.at(i).at(j).find(high) == field.at(i).at(j).end())
             {
                 field.at(i).at(j).insert(high);
@@ -345,20 +355,15 @@ std::pair<std::vector<std::pair<std::tuple<int, int, int>, int>>, std::vector<st
                 std::cout << "average is nan" << std::endl;
             }
             
-            for(int p = i*20 ; p < 20+i*20 ; p++){
-                cv::Vec3b* ptr = M.ptr<cv::Vec3b>( p );
-                for(int q = j*20 ; q < 20+j*20 ; q++){
-
-                    ptr[q] = cv::Vec3b(median * BlockHigh * 5000 + 50, median * BlockHigh * 5000 + 50, median * BlockHigh * 5000+ 50);
-                    //ptr[q] = cv::Vec3b(high *5000+100, high *5000+100, high *5000+100);
-                }
-            }
+           
             
         }
     }
+    std::sort(data_num_lists.begin(), data_num_lists.end());
     std::sort(depth_data_list.begin(), depth_data_list.end());
     std::sort(color_distance_list.begin(), color_distance_list.end());
     std::reverse(depth_data_list.begin(), depth_data_list.end());
+    
     std::cout << "depth" << std::endl;
     for (int i = 0; i < std::min(10, (int)depth_data_list.size()); i++)
     {
@@ -368,6 +373,10 @@ std::pair<std::vector<std::pair<std::tuple<int, int, int>, int>>, std::vector<st
     for (int i = 0; i < std::min(10, (int)color_distance_list.size()); i++)
     {
         std::cout << i << "th : " << color_distance_list.at(i).first << " " << color_distance_list.at(i).second << std::endl;
+    }
+    std::cout<<"data num"<<std::endl;
+    for(int i = 0;i < std::min(10, (int)data_num_lists.size()); i++){
+        std::cout << i << "th : " << data_num_lists[i] << std::endl;
     }
     //cv::imshow("Visualizer", M);
     //int c = cv::waitKey();
@@ -513,7 +522,7 @@ void Detection::detectBoard()
                 }
 
                 findSquares(image, squares);
-                drawSquares(image, squares);
+                //drawSquares(image, squares);
             } while (squares.empty());
 
             std::vector<std::pair<int, int>> frame_pos;
