@@ -74,12 +74,9 @@ bool Communication::isDetection(std::string url){
     curl_easy_cleanup(hnd);
     hnd = NULL;
 
-    if (readBuffer == "1") 
-        return true;
-    else if (readBuffer == "0") 
-        return false;
-    
+    return readBuffer == "1";   
 }
+
 
 size_t Communication::writeCallback(void *contents, size_t size, size_t nmemb, void *userp){
    ((std::string*)userp)->append((char*)contents, size * nmemb);
