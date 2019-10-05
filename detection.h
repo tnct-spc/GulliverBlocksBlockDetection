@@ -53,7 +53,7 @@ private:
 
 public:
     std::vector<float3tuple> BoardPosBasedData;
-    std::vector<std::vector<std::set<int>>> field;
+    std::vector<std::vector<std::set<std::pair<int, int>>>> field;
     std::vector<std::vector<double>> based_data;
     rs2::pipeline pipe;
     rs2::config cfg;

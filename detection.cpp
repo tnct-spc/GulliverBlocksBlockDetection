@@ -11,7 +11,7 @@ Detection::Detection()
     detectBoard();
     based_data = std::vector<std::vector<double>>(BoardEdgeNum, std::vector<double>(BoardEdgeNum, 0));
     std::vector<std::vector<std::vector<float>>> data = std::vector<std::vector<std::vector<float>>>(BoardEdgeNum, std::vector<std::vector<float>>(BoardEdgeNum));
-    field = std::vector<std::vector<std::set<int>>>(BoardEdgeNum, std::vector<std::set<int>>(BoardEdgeNum));
+    field = std::vector<std::vector<std::set<std::pair<int, int>>>>(BoardEdgeNum, std::vector<std::set<std::pair<int, int>>>(BoardEdgeNum));
     float x0 = BoardPosBasedData.at(0).x;
     float y0 = BoardPosBasedData.at(0).y;
     float z0 = BoardPosBasedData.at(0).z;
@@ -313,6 +313,12 @@ std::pair<std::vector<std::pair<std::tuple<int, int, int>, int>>, std::vector<st
             int g = grid_data_g.at(grid_data_g.size() / 2);
             int b = grid_data_b.at(grid_data_b.size() / 2);
 
+            float X = 0.4124 * r + 0.3576 * g + 0.1805 * b;
+            float Y = 0.2126 * r + 0.7152 * g + 0.0722 * b;
+            float Z = 0.0193 * r + 0.1192 * g + 0.9505 * b;
+
+
+
             int color = 0;
             int color_distance = 1e9;
             for (int k = 0; k < BlockColors.size(); k++)
@@ -337,19 +343,34 @@ std::pair<std::vector<std::pair<std::tuple<int, int, int>, int>>, std::vector<st
             high = std::max(high, 0);
             while (true)
             {
-                auto itr = field.at(i).at(j).upper_bound(high);
+                auto itr = field.at(i).at(j).upper_bound({high, 1e9});
                 if (itr == field.at(i).at(j).end())
                     break;
-                remove.push_back(std::make_tuple(i, *itr, j)); //x z y
+                auto a = *itr;
+                remove.push_back(std::make_tuple(i, a.first, j)); //x z y
                 field.at(i).at(j).erase(itr);
             }
-             if (color_distance > 10000)
+             if (color_distance > 5000)
                 continue;
-            if (high != 0 && field.at(i).at(j).find(high) == field.at(i).at(j).end())
+
+            if(color == BlockColors.size() - 1)color = 12;
+
+            auto a = field.at(i).at(j).upper_bound({high, -1});
+            auto c = *a;
+            if(c.first == high && c.second != color){
+                remove.push_back(std::make_tuple(i, high, j));
+                add.push_back(std::make_pair(std::make_tuple(i, high, j), color));
+                field.at(i).at(j).insert({high, color});
+                field.at(i).at(j).erase(a);
+            }
+
+            if (high != 0 && field.at(i).at(j).find({high, color}) == field.at(i).at(j).end())
             {
-                field.at(i).at(j).insert(high);
+                field.at(i).at(j).insert({high, color});
                 add.push_back(std::make_pair(std::make_tuple(i, high, j), color)); //x z y
             }
+
+
             if (std::isnan(median))
             {
                 std::cout << "average is nan" << std::endl;
