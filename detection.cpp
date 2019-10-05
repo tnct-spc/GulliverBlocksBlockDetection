@@ -278,7 +278,7 @@ std::pair<std::vector<std::pair<std::tuple<int, int, int>, int>>, std::vector<st
     }
     std::cout << "finish get data" << std::endl;
 
-    cv::Mat M(960, 960, CV_8UC3, cv::Scalar(0,0,0));
+    //cv::Mat M(960, 960, CV_8UC3, cv::Scalar(0,0,0));
     std::cout << std::setprecision(3);
     std::vector<float> depth_data_list;
     std::vector<std::pair<int, int>> color_distance_list;
@@ -290,6 +290,7 @@ std::pair<std::vector<std::pair<std::tuple<int, int, int>, int>>, std::vector<st
         for (int j = 0; j < BoardEdgeNum; j++)
         {
             //      if(!hand_flag.at(i).at(j))continue;
+            /*
              for(int p = i*20 ; p < 20+i*20 ; p++){
                 cv::Vec3b* ptr = M.ptr<cv::Vec3b>( p );
                 for(int q = j*20 ; q < 20+j*20 ; q++){
@@ -298,6 +299,7 @@ std::pair<std::vector<std::pair<std::tuple<int, int, int>, int>>, std::vector<st
                     ptr[q] = cv::Vec3b(data.at(i).at(j).size(), data.at(i).at(j).size(), data.at(i).at(j).size());
                 }
             }
+            */
 
             if (!data.at(i).at(j).size())
                 continue;
@@ -312,12 +314,6 @@ std::pair<std::vector<std::pair<std::tuple<int, int, int>, int>>, std::vector<st
             int r = grid_data_r.at(grid_data_r.size() / 2);
             int g = grid_data_g.at(grid_data_g.size() / 2);
             int b = grid_data_b.at(grid_data_b.size() / 2);
-
-            float X = 0.4124 * r + 0.3576 * g + 0.1805 * b;
-            float Y = 0.2126 * r + 0.7152 * g + 0.0722 * b;
-            float Z = 0.0193 * r + 0.1192 * g + 0.9505 * b;
-
-
 
             int color = 0;
             int color_distance = 1e9;
@@ -355,9 +351,8 @@ std::pair<std::vector<std::pair<std::tuple<int, int, int>, int>>, std::vector<st
 
             if(color == BlockColors.size() - 1)color = 12;
 
-            auto a = field.at(i).at(j).upper_bound({high, -1});
-            auto c = *a;
-            if(c.first == high && c.second != color){
+            auto a = *field.at(i).at(j).upper_bound({high, -1});
+            if(a.first == high && a.second != color){
                 remove.push_back(std::make_tuple(i, high, j));
                 add.push_back(std::make_pair(std::make_tuple(i, high, j), color));
                 field.at(i).at(j).insert({high, color});
