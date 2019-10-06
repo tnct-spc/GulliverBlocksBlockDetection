@@ -81,7 +81,65 @@ bool Communication::isDetection(std::string url){
     
 }
 
+std::pair<std::vector<std::pair<std::tuple<int,int,int>, int>>, std::vector<std::tuple<int,int,int>>> Communication::getInitBlockData(std::string url){
+    std::pair<std::vector<std::pair<std::tuple<int,int,int>, int>>, std::vector<std::tuple<int,int,int>>> block_data;
+
+    CURL *hnd;
+    std::string read_buffer;
+
+    hnd = curl_easy_init();
+    curl_easy_setopt(hnd, CURLOPT_URL, url.c_str());
+    curl_easy_setopt(hnd, CURLOPT_WRITEFUNCTION, writeCallback);
+    curl_easy_setopt(hnd, CURLOPT_WRITEDATA, &read_buffer);
+
+    curl_easy_perform(hnd);
+    curl_easy_cleanup(hnd);
+    hnd = NULL;
+        
+    int colorid, x, y, z;
+    size_t colorid_i = read_buffer.find("colorID");
+    int count = 0;    
+    while (colorid_i != std::string::npos)
+    {
+        count++;
+        colorid_i = read_buffer.find("colorID", colorid_i + 1);
+    }
+    
+
+    for (size_t i = 0; i < count; i++)
+    {
+        colorid = valueFromKey(read_buffer, "colorID");
+        x = valueFromKey(read_buffer, "x");
+        y = valueFromKey(read_buffer, "y");
+        z = valueFromKey(read_buffer, "z");
+        block_data.first.push_back({{x, y, z}, colorid});
+    }      
+
+    return block_data;
+}
+
+
 size_t Communication::writeCallback(void *contents, size_t size, size_t nmemb, void *userp){
    ((std::string*)userp)->append((char*)contents, size * nmemb);
    return size * nmemb;
+}
+
+int Communication::valueFromKey(std::string& json, std::string key){
+    //colorID,x,y,zの値の抽出用
+    std::smatch tmp;
+    std::smatch value;
+    std::string tmp_string;
+    std::regex re_number("\\d+");
+    std::regex re_key(key + "\":\"?[0-9]+\"?[,}]");
+
+
+    if (std::regex_search(json, tmp, re_key))
+    {
+        tmp_string = tmp.str();
+        if (std::regex_search(tmp_string, value, re_number))
+        {   
+            json = tmp.suffix();
+            return std::stoi(value.str());
+        }
+    }
 }
