@@ -81,8 +81,28 @@ bool Communication::isDetection(std::string url){
     
 }
 
-std::pair<std::vector<std::pair<std::tuple<int,int,int>, int>>, std::vector<std::tuple<int,int,int>>> Communication::getInitBlockData(std::string url){
-    std::pair<std::vector<std::pair<std::tuple<int,int,int>, int>>, std::vector<std::tuple<int,int,int>>> block_data;
+std::vector<std::pair<std::tuple<int,int,int>, int>> Communication::getInitBlockData(std::string url){
+    auto value_from_key = [](std::string& json, std::string key){
+        //colorID,x,y,zの値の抽出用
+        std::smatch tmp;
+        std::smatch value;
+        std::string tmp_string;
+        std::regex re_number("\\d+");
+        std::regex re_key(key + "\":\"?[0-9]+\"?[,}]");
+
+
+        if (std::regex_search(json, tmp, re_key))
+        {
+            tmp_string = tmp.str();
+            if (std::regex_search(tmp_string, value, re_number))
+            {   
+                json = tmp.suffix();
+                return std::stoi(value.str());
+            }
+        }
+    };
+    
+    std::vector<std::pair<std::tuple<int,int,int>, int>> block_data;
 
     CURL *hnd;
     std::string read_buffer;
@@ -108,11 +128,11 @@ std::pair<std::vector<std::pair<std::tuple<int,int,int>, int>>, std::vector<std:
 
     for (size_t i = 0; i < count; i++)
     {
-        colorid = valueFromKey(read_buffer, "colorID");
-        x = valueFromKey(read_buffer, "x");
-        y = valueFromKey(read_buffer, "y");
-        z = valueFromKey(read_buffer, "z");
-        block_data.first.push_back({{x, y, z}, colorid});
+        colorid = value_from_key(read_buffer, "colorID");
+        x = value_from_key(read_buffer, "x");
+        y = value_from_key(read_buffer, "y");
+        z = value_from_key(read_buffer, "z");
+        block_data.push_back({{x, y, z}, colorid});
     }      
 
     return block_data;
@@ -122,24 +142,4 @@ std::pair<std::vector<std::pair<std::tuple<int,int,int>, int>>, std::vector<std:
 size_t Communication::writeCallback(void *contents, size_t size, size_t nmemb, void *userp){
    ((std::string*)userp)->append((char*)contents, size * nmemb);
    return size * nmemb;
-}
-
-int Communication::valueFromKey(std::string& json, std::string key){
-    //colorID,x,y,zの値の抽出用
-    std::smatch tmp;
-    std::smatch value;
-    std::string tmp_string;
-    std::regex re_number("\\d+");
-    std::regex re_key(key + "\":\"?[0-9]+\"?[,}]");
-
-
-    if (std::regex_search(json, tmp, re_key))
-    {
-        tmp_string = tmp.str();
-        if (std::regex_search(tmp_string, value, re_number))
-        {   
-            json = tmp.suffix();
-            return std::stoi(value.str());
-        }
-    }
 }
