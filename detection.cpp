@@ -106,8 +106,8 @@ Detection::Detection()
                 cv::Vec3b* ptr = M.ptr<cv::Vec3b>( p );
                     for(int q = j*20 ; q < 20+j*20 ; q++){
 
-                    //ptr[q] = cv::Vec3b(based_data.at(i).at(j) * 10000 + 50, based_data.at(i).at(j) * 10000 + 50, based_data.at(i).at(j) * 10000+ 50);
-                    ptr[q] = cv::Vec3b(bunsan, bunsan, bunsan);
+                    ptr[q] = cv::Vec3b(based_data.at(i).at(j) * 10000 + 50, based_data.at(i).at(j) * 10000 + 50, based_data.at(i).at(j) * 10000+ 50);
+                    //ptr[q] = cv::Vec3b(bunsan, bunsan, bunsan);
                 }
             }
         }
@@ -117,8 +117,8 @@ Detection::Detection()
     for(int i = 0;i < 10;i++){
         std::cout<<i<<" "<<depth_lists.at(i)<<std::endl;
     }
-    //cv::imshow("Visualizer", M);
-    //int c = cv::waitKey();
+    cv::imshow("Visualizer", M);
+    int c = cv::waitKey();
 }
 
 std::vector<float3tuple> Detection::getDepth()
@@ -234,7 +234,7 @@ std::vector<std::pair<float3tuple, std::tuple<int, int, int>>> Detection::getDep
 std::pair<std::vector<std::pair<std::tuple<int, int, int>, int>>, std::vector<std::tuple<int, int, int>>> Detection::singleDetect()
 {
 
-    int frame_num = 6;
+    int frame_num = 3;
     std::vector<std::vector<std::vector<std::vector<float>>>> multiframe_data = std::vector<std::vector<std::vector<std::vector<float>>>>(BoardEdgeNum, std::vector<std::vector<std::vector<float>>>(BoardEdgeNum, std::vector<std::vector<float>>(frame_num, std::vector<float>({}))));
     //std::vector<std::vector<bool>> hand_flag(BoardEdgeNum, std::vector<bool>(BoardEdgeNum, true)); //手の判定
     std::vector<std::vector<std::vector<float>>> data = std::vector<std::vector<std::vector<float>>>(BoardEdgeNum, std::vector<std::vector<float>>(BoardEdgeNum, std::vector<float>({})));
@@ -352,7 +352,7 @@ std::pair<std::vector<std::pair<std::tuple<int, int, int>, int>>, std::vector<st
             if(color == BlockColors.size() - 1)color = 12;
 
             auto a = *field.at(i).at(j).upper_bound({high, -1});
-            if(a.first == high && a.second != color){
+            if(a.first == high && high != 0 && a.second != color){
                 remove.push_back(std::make_tuple(i, high, j));
                 add.push_back(std::make_pair(std::make_tuple(i, high, j), color));
                 field.at(i).at(j).insert({high, color});
@@ -538,7 +538,7 @@ void Detection::detectBoard()
                 }
 
                 findSquares(image, squares);
-                //drawSquares(image, squares);
+                drawSquares(image, squares);
             } while (squares.empty());
 
             std::vector<std::pair<int, int>> frame_pos;

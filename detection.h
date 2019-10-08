@@ -42,14 +42,17 @@ struct float3tuple //std::tupleは遅い
 class Detection{
 private:
     std::vector<std::vector<double>> data;
-    float BoardEdgeLen = 0.385; //Board Edge Length
-    float BlockEdgeLen = 0.385 / 48.0;
+    //float BoardEdgeLen = 0.385; //Board Edge Length
+    //float BlockEdgeLen = 0.385 / 48.0;
+    float BoardEdgeLen = 0.280;
+    float BlockEdgeLen = 0.280 / 35;
     const double dispersion_thresh = 0.0005;
-    const int BoardEdgeNum = 48;
+    //const int BoardEdgeNum = 48;
+    const int BoardEdgeNum = 35;
     const double BlockHigh = 0.009;
     const float BlockHighthresh = 0.5;
 
-    const std::vector<std::tuple<int, int, int>> BlockColors = { std::make_tuple(10, 10, 10), std::make_tuple(180, 61, 59), std::make_tuple(242, 205, 55), std::make_tuple(1e3, 1e3, 1e3), std::make_tuple(187, 232, 11), std::make_tuple(1e3, 1e3, 1e3), std::make_tuple(0, 85, 191), std::make_tuple(35, 120, 65), std::make_tuple(1e3, 1e3, 1e3), std::make_tuple(187, 233, 11) };
+    const std::vector<std::tuple<int, int, int>> BlockColors = { std::make_tuple(40, 43, 44), std::make_tuple(141, 28, 24), std::make_tuple(198, 154, 48), std::make_tuple(1e3, 1e3, 1e3), std::make_tuple(187, 232, 11), std::make_tuple(1e3, 1e3, 1e3), std::make_tuple(0, 85, 191), std::make_tuple(6, 68, 44), std::make_tuple(1e3, 1e3, 1e3), std::make_tuple(191, 186, 175) };
 
 public:
     std::vector<float3tuple> BoardPosBasedData;
