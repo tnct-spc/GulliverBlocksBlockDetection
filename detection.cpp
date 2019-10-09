@@ -113,7 +113,7 @@ Detection::Detection()
         }
     }
     std::sort(depth_lists.begin(), depth_lists.end());
-    std::reverse(depth_lists.begin(), depth_lists.end());
+    //std::reverse(depth_lists.begin(), depth_lists.end());
     for(int i = 0;i < 10;i++){
         std::cout<<i<<" "<<depth_lists.at(i)<<std::endl;
     }
@@ -191,7 +191,6 @@ std::vector<std::pair<float3tuple, std::tuple<int, int, int>>> Detection::getDep
     rs2::video_frame color_frame = aligned_frames.first(RS2_STREAM_COLOR);
     rs2::depth_frame depth = aligned_frames.get_depth_frame();
 
-
     const double scale = 0.001;
 
     auto z_pixels = reinterpret_cast<const uint16_t *>(depth.get_data());
@@ -234,7 +233,7 @@ std::vector<std::pair<float3tuple, std::tuple<int, int, int>>> Detection::getDep
 std::pair<std::vector<std::pair<std::tuple<int, int, int>, int>>, std::vector<std::tuple<int, int, int>>> Detection::singleDetect()
 {
 
-    int frame_num = 3;
+    int frame_num = 6;
     std::vector<std::vector<std::vector<std::vector<float>>>> multiframe_data = std::vector<std::vector<std::vector<std::vector<float>>>>(BoardEdgeNum, std::vector<std::vector<std::vector<float>>>(BoardEdgeNum, std::vector<std::vector<float>>(frame_num, std::vector<float>({}))));
     //std::vector<std::vector<bool>> hand_flag(BoardEdgeNum, std::vector<bool>(BoardEdgeNum, true)); //手の判定
     std::vector<std::vector<std::vector<float>>> data = std::vector<std::vector<std::vector<float>>>(BoardEdgeNum, std::vector<std::vector<float>>(BoardEdgeNum, std::vector<float>({})));
@@ -291,21 +290,23 @@ std::pair<std::vector<std::pair<std::tuple<int, int, int>, int>>, std::vector<st
         {
             //      if(!hand_flag.at(i).at(j))continue;
             /*
-             for(int p = i*20 ; p < 20+i*20 ; p++){
+            for(int p = i*20 ; p < 20+i*20 ; p++){
                 cv::Vec3b* ptr = M.ptr<cv::Vec3b>( p );
                 for(int q = j*20 ; q < 20+j*20 ; q++){
 
                     //ptr[q] = cv::Vec3b(median * BlockHigh * 5000 + 50, median * BlockHigh * 5000 + 50, median * BlockHigh * 5000+ 50);
-                    ptr[q] = cv::Vec3b(data.at(i).at(j).size(), data.at(i).at(j).size(), data.at(i).at(j).size());
-                }
+                    //ptr[q] = cv::Vec3b(data.at(i).at(j).size(), data.at(i).at(j).size(), data.at(i).at(j).size());
+                    }
             }
             */
 
-            if (!data.at(i).at(j).size())
-                continue;
+            
             std::vector<float> grid_data = data.at(i).at(j);
 
             data_num_lists.push_back(data.at(i).at(j).size());
+
+            if (data.at(i).at(j).size() <= 15)
+                continue;
 
             std::vector<int> grid_data_r = RGB_R.at(i).at(j);
             std::vector<int> grid_data_g = RGB_G.at(i).at(j);
@@ -337,6 +338,7 @@ std::pair<std::vector<std::pair<std::tuple<int, int, int>, int>>, std::vector<st
             depth_data_list.push_back(median);
             int high = std::round(median);
             high = std::max(high, 0);
+            if(high > 10)continue;
             while (true)
             {
                 auto itr = field.at(i).at(j).upper_bound({high, 1e9});
@@ -509,7 +511,7 @@ void Detection::detectBoard()
         return std::sqrt(std::pow(x1 - x2, 2) + std::pow(y1 - y2, 2) + std::pow(z1 - z2, 2));
     };
 
-    int frame_num = 1;
+    int frame_num = 6;
     BoardPosBasedData = std::vector<float3tuple>(4);
 
     for (int frame_idx = 0; frame_idx < frame_num; frame_idx++)

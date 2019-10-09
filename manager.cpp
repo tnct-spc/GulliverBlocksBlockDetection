@@ -5,10 +5,11 @@ Manager::Manager(){
 }
 
 void Manager::RunSingleDetection(){
+    std::time_t t = std::time(nullptr);
+    std::cout << "local:     " << std::put_time(std::localtime(&t), "%c %Z") << std::endl;;
     std::cout<<"Start detection"<<std::endl;
     Detection detection;
     std::cout<<"Finish constractor"<<std::endl;
-    int cnt = 0;
     while(1){
         std::pair<std::vector<std::pair<std::tuple<int, int, int>, int>>, std::vector<std::tuple<int,int,int>>> detect_info = detection.singleDetect();
         for(int i = 0;i < detect_info.first.size();i++){
@@ -22,8 +23,6 @@ void Manager::RunSingleDetection(){
         std::cout<<detect_info.second.size()<<": Deleted"<<std::endl;
         std::string url = "http://gulliverblocks.herokuapp.com/add_blocks/d810712f-9927-43d1-9149-af5bca1a174b/";
         Poster.postJson(url, detect_info);
-        std::cout<<cnt<<std::endl;
-        cnt++;
     }
     
 }
