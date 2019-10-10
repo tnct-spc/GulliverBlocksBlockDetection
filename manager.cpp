@@ -12,6 +12,7 @@ void Manager::RunSingleDetection(){
     std::cout<<"Finish constractor"<<std::endl;
     while(1){
         std::pair<std::vector<std::pair<std::tuple<int, int, int>, int>>, std::vector<std::tuple<int,int,int>>> detect_info = detection.singleDetect();
+        if(detect_info.first.empty() && detect_info.second.empty())continue;
         for(int i = 0;i < detect_info.first.size();i++){
             std::cout<<std::get<0>(detect_info.first.at(i).first)<<" "<<std::get<1>(detect_info.first.at(i).first)<<" "<<std::get<2>(detect_info.first.at(i).first)<<std::endl;
         }
@@ -21,7 +22,8 @@ void Manager::RunSingleDetection(){
             std::cout<<std::get<0>(detect_info.second.at(i))<<" "<<std::get<1>(detect_info.second.at(i))<<" "<<std::get<2>(detect_info.second.at(i))<<std::endl;
         }
         std::cout<<detect_info.second.size()<<": Deleted"<<std::endl;
-        std::string url = "http://gulliverblocks.herokuapp.com/add_blocks/d810712f-9927-43d1-9149-af5bca1a174b/";
+        std::string url = "http://gulliverblocks.herokuapp.com/add_blocks/4d343ae9-dabb-4598-a3d8-de6b45a8a722/";
+        //std::string url = "192.169.1.128:5000/add_blocks/75465362-9686-4abc-9bef-b0c165c6f7d2/";
         Poster.postJson(url, detect_info);
     }
     

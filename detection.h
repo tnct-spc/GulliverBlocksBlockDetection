@@ -52,7 +52,7 @@ private:
     const double BlockHigh = 0.009;
     const float BlockHighthresh = 0.5;
 
-    const std::vector<std::tuple<int, int, int>> BlockColors = { std::make_tuple(13, 26, 37), std::make_tuple(152, 16, 27), std::make_tuple(197, 153, 30), std::make_tuple(1e3, 1e3, 1e3), std::make_tuple(187, 232, 11), std::make_tuple(1e3, 1e3, 1e3), std::make_tuple(0, 85, 160), std::make_tuple(0, 91, 80), std::make_tuple(1e3, 1e3, 1e3), std::make_tuple(195, 187, 189) };
+    const std::vector<std::tuple<int, int, int>> BlockColors = { std::make_tuple(10, 26, 35), std::make_tuple(134, 18, 26), std::make_tuple(175, 154, 30), std::make_tuple(1e3, 1e3, 1e3), std::make_tuple(1e3, 1e3, 1e3), std::make_tuple(1e3, 1e3, 1e3), std::make_tuple(0, 62, 146), std::make_tuple(0, 73, 58), std::make_tuple(1e3, 1e3, 1e3), std::make_tuple(137, 182, 208) };
 
 public:
     std::vector<float3tuple> BoardPosBasedData;

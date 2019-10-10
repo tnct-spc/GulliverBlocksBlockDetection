@@ -54,7 +54,8 @@ Detection::Detection()
                 if (std::floor(x / BlockEdgeLen) >= BoardEdgeNum || std::floor(y / BlockEdgeLen) >= BoardEdgeNum || std::floor(y / BlockEdgeLen) < 0 || std::floor(x / BlockEdgeLen) < 0)
                 {
                     std::cerr << "detection.cpp コンストラクタ内で配列外参照だよ！！" << std::floor(x / BoardEdgeLen) << " " << std::floor(y / BoardEdgeLen) << std::endl;
-                    std::abort();
+                    //std::abort();
+                    continue;
                 }
                 if (!(0.2 < x / BlockEdgeLen - std::floor(x / BlockEdgeLen) && x / BlockEdgeLen - std::floor(x / BlockEdgeLen) < 0.8))
                     continue; //あまり境界に近くないほうがよい
@@ -99,6 +100,7 @@ Detection::Detection()
             //average = t_average / addcnt;
             std::sort(dis_data.begin(), dis_data.end());
             based_data.at(i).at(j) = dis_data.at(dis_data.size() / 2);
+            //based_data.at(i).at(j) = 0;
 
             depth_lists.push_back(based_data.at(i).at(j));
 
@@ -338,7 +340,7 @@ std::pair<std::vector<std::pair<std::tuple<int, int, int>, int>>, std::vector<st
             depth_data_list.push_back(median);
             int high = std::round(median);
             high = std::max(high, 0);
-            if(high > 10)continue;
+            if(high >= 6)continue;
             while (true)
             {
                 auto itr = field.at(i).at(j).upper_bound({high, 1e9});
@@ -416,7 +418,7 @@ void Detection::detectBoard()
     };
 
     auto findSquares = [&](const cv::Mat &image, std::vector<std::vector<cv::Point>> &squares) {
-        int thresh = 1000, N = 11;
+        int thresh = 1200, N = 11;
         squares.clear();
 
         cv::Mat pyr, timg, gray0(image.size(), CV_8U), gray;
@@ -511,7 +513,7 @@ void Detection::detectBoard()
         return std::sqrt(std::pow(x1 - x2, 2) + std::pow(y1 - y2, 2) + std::pow(z1 - z2, 2));
     };
 
-    int frame_num = 6;
+    int frame_num = 3;
     BoardPosBasedData = std::vector<float3tuple>(4);
 
     for (int frame_idx = 0; frame_idx < frame_num; frame_idx++)
@@ -585,22 +587,26 @@ void Detection::detectBoard()
             int area_idx = 0;
             for (auto a : squares)
             {
-                double distance = 0;
+                int area = 0;
                 for (int i = 0; i < 4; i++)
                 {
-                    distance += ((a.at(i).x - a.at((i + 1) % 4).x) * (a.at(i).y + a.at((i + 1) % 4).y));
+                    area += ((a.at(i).x - a.at((i + 1) % 4).x) * (a.at(i).y + a.at((i + 1) % 4).y));
                 }
-                distance = std::abs(distance) / 2;
-                frame_list.push_back({distance, area_idx});
+                area = std::abs(area) / 2;
+                frame_list.push_back({area, area_idx});
                 area_idx++;
-                std::cout << distance << std::endl;
+                std::cout << area << std::endl;
             }
             sort(frame_list.begin(), frame_list.end());
-            int frame_idx = std::upper_bound(frame_list.begin(), frame_list.end(), std::make_pair(1.0 * 1e5, 0)) - frame_list.begin();
+            int frame_idx = std::upper_bound(frame_list.begin(), frame_list.end(), std::make_pair(1.0 * 1e4 * 5, -1)) - frame_list.begin();
             if (frame_idx == frame_list.size()){
                 continue;
                 //よくない
             }
+            /*
+            for(; frame_idx < frame_list.size(); frame_idx++){
+            }
+            */
             for (int i = 0; i < 4; i++)
             {
                 frame_pos.push_back({squares.at(frame_list.at(frame_idx).second).at(i).x, squares.at(frame_list.at(frame_idx).second).at(i).y});
