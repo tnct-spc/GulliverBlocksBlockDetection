@@ -86,6 +86,7 @@ public:
     std::vector<float3tuple> getDepth();
     std::vector<std::pair<float3tuple, std::tuple<int, int, int>>> getDepthAndColor();
 
+
     void detectBoard();
     float3tuple translatePixelToP3DPoint(float x, float y);
     float3tuple translatePixelToP3DPoint(float x, float y, rs2_intrinsics& intr, rs2::depth_frame& depth);

@@ -540,9 +540,13 @@ void Detection::detectBoard()
                     std::cerr << "Couldn't load " << std::endl;
                     std::abort();
                 }
-
+                /*
                 findSquares(image, squares);
                 drawSquares(image, squares);
+                */
+                cv::imshow("www", image);
+                cv::setMouseCallback("www", mouse_callback);
+
             } while (squares.empty());
 
             std::vector<std::pair<int, int>> frame_pos;
@@ -770,4 +774,10 @@ float Detection::inner_product(std::tuple<float, float, float> a, std::tuple<flo
 float3tuple Detection::outer_product(std::tuple<float, float, float> a, std::tuple<float, float, float> b)
 {
     return float3tuple(std::get<1>(a) * std::get<2>(b) - std::get<2>(a) * std::get<1>(b), std::get<2>(a) * std::get<0>(b) - std::get<0>(a) * std::get<2>(b), std::get<0>(a) * std::get<1>(b) - std::get<1>(a) * std::get<0>(b));
+}
+void mouse_callback(int event, int x, int y, int flags, void *userdata, std::vector<cv::Point> squares)
+{
+    if (event == cv::EVENT_MOUSEMOVE) {
+        std::cout << "(" << x << ", " << y << ")" << std::endl;
+    }
 }
