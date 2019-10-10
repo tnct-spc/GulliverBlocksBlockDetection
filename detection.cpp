@@ -150,9 +150,6 @@ std::vector<float3tuple> Detection::getDepth()
 
 std::vector<std::pair<float3tuple, std::tuple<int, int, int>>> Detection::getDepthAndColor()
 {
-
-    std::chrono::system_clock::time_point start, end;
-    start = std::chrono::system_clock::now();
     auto frame_to_mat = [](const rs2::frame &f) {
         auto vf = f.as<rs2::video_frame>();
         const int w = vf.get_width();
@@ -226,16 +223,15 @@ std::vector<std::pair<float3tuple, std::tuple<int, int, int>>> Detection::getDep
             data.emplace_back(std::make_pair(pos, std::make_tuple(bgr[2], bgr[1], bgr[0]))); //bgr to rgb 実験用
         }
     }
-    end = std::chrono::system_clock::now();
-    double time = static_cast<double>(std::chrono::duration_cast<std::chrono::microseconds>(end - start).count() / 1000.0);
-    std::cout << time / 1000 << "s" << std::endl;
     return data;
 }
 
 std::pair<std::vector<std::pair<std::tuple<int, int, int>, int>>, std::vector<std::tuple<int, int, int>>> Detection::singleDetect()
 {
+    std::chrono::system_clock::time_point start, end;
+    start = std::chrono::system_clock::now();
 
-    int frame_num = 6;
+    int frame_num = 2;
     std::vector<std::vector<std::vector<std::vector<float>>>> multiframe_data = std::vector<std::vector<std::vector<std::vector<float>>>>(BoardEdgeNum, std::vector<std::vector<std::vector<float>>>(BoardEdgeNum, std::vector<std::vector<float>>(frame_num, std::vector<float>({}))));
     //std::vector<std::vector<bool>> hand_flag(BoardEdgeNum, std::vector<bool>(BoardEdgeNum, true)); //手の判定
     std::vector<std::vector<std::vector<float>>> data = std::vector<std::vector<std::vector<float>>>(BoardEdgeNum, std::vector<std::vector<float>>(BoardEdgeNum, std::vector<float>({})));
@@ -400,6 +396,10 @@ std::pair<std::vector<std::pair<std::tuple<int, int, int>, int>>, std::vector<st
     }
     //cv::imshow("Visualizer", M);
     //int c = cv::waitKey();
+    end = std::chrono::system_clock::now();
+    double time = static_cast<double>(std::chrono::duration_cast<std::chrono::microseconds>(end - start).count() / 1000.0);
+    std::cout << time / 1000 << "s" << std::endl;
+
     return std::make_pair(add, remove);
 }
 
