@@ -564,7 +564,7 @@ void Detection::detectBoard()
                     }
                 }
                 squares.push_back(Pos);
-
+                //drawSquares(image, squares);
             } while (squares.empty());
 
             std::vector<std::pair<int, int>> frame_pos;
