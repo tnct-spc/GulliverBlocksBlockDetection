@@ -405,6 +405,9 @@ std::pair<std::vector<std::pair<std::tuple<int, int, int>, int>>, std::vector<st
 
 void Detection::detectBoard()
 {
+    bool is_fisrt = true;
+
+
     //realsenseで写真取ってopencvで矩形認識 -> 得られたpixelをさらにrealsenseで三次元座標に
     //https://github.com/opencv/opencv/blob/master/samples/cpp/squares.cpp <- 矩形認識
     //https://github.com/IntelRealSense/librealsense/blob/master/wrappers/opencv/cv-helpers.hpp <- opencvとrealsenseの連携
@@ -499,7 +502,7 @@ void Detection::detectBoard()
             polylines(image, &p, &n, 1, true, cv::Scalar(0, 255, 0), 3, cv::LINE_AA);
         }
 
-            imshow("TestSquares", image);
+            imshow("detectBoard", image);
             int c = cv::waitKey();
     };
     auto Distance = [](float3tuple a, float3tuple b) {
@@ -532,6 +535,12 @@ void Detection::detectBoard()
                 auto im = pipe.wait_for_frames().get_color_frame();
                 // std::cout<<"BBB"<<std::endl;
                 cv::Mat image = frame_to_mat(im);
+                if(is_fisrt){
+                    cv::imshow("detectBoard", image);
+                    int c = cv::waitKey();
+                    is_fisrt = false;
+                    continue;
+                }
                 std::cout << image.rows << " " << image.cols << std::endl;
 
                 std::cout << "capture" << std::endl;
@@ -540,8 +549,31 @@ void Detection::detectBoard()
                     std::cerr << "Couldn't load " << std::endl;
                     std::abort();
                 }
-
+                /*
                 findSquares(image, squares);
+                drawSquares(image, squares);
+                */
+                mouseParam mouseEvent;
+                cv::imshow("detectBoard", image);
+                cv::setMouseCallback("detectBoard", CallBackFunc, &mouseEvent);
+                std::set<std::pair<int, int>> Pos;
+                for(;Pos.size() < 4;){
+                    cv::waitKey(1);
+                    //左クリックがあったら表示
+                    if (mouseEvent.event == cv::EVENT_LBUTTONDOWN) {
+                        //クリック後のマウスの座標を出力
+                        std::cout << mouseEvent.x << " , " << mouseEvent.y << std::endl;
+                        Pos.insert(std::make_pair(mouseEvent.x, mouseEvent.y));
+                    }
+                    //右クリックがあったら終了
+                    else if (mouseEvent.event == cv::EVENT_RBUTTONDOWN) {
+                        std::cout<<"右クリックされたよ"<<std::endl;
+                        abort();
+                    }
+                }
+                std::vector<cv::Point> usi;
+                for(auto a : Pos)usi.push_back(cv::Point(a.first, a.second));
+                squares.push_back(usi);
                 drawSquares(image, squares);
             } while (squares.empty());
 
@@ -583,33 +615,14 @@ void Detection::detectBoard()
 
             std::sort(frame_pos.begin(), frame_pos.end());
             */
-            std::vector<std::pair<double, int>> frame_list;
-            int area_idx = 0;
-            for (auto a : squares)
-            {
-                int area = 0;
-                for (int i = 0; i < 4; i++)
-                {
-                    area += ((a.at(i).x - a.at((i + 1) % 4).x) * (a.at(i).y + a.at((i + 1) % 4).y));
-                }
-                area = std::abs(area) / 2;
-                frame_list.push_back({area, area_idx});
-                area_idx++;
-                std::cout << area << std::endl;
-            }
-            sort(frame_list.begin(), frame_list.end());
-            int frame_idx = std::upper_bound(frame_list.begin(), frame_list.end(), std::make_pair(1.0 * 1e4 * 5, -1)) - frame_list.begin();
-            if (frame_idx == frame_list.size()){
-                continue;
-                //よくない
-            }
+         
             /*
             for(; frame_idx < frame_list.size(); frame_idx++){
             }
             */
             for (int i = 0; i < 4; i++)
             {
-                frame_pos.push_back({squares.at(frame_list.at(frame_idx).second).at(i).x, squares.at(frame_list.at(frame_idx).second).at(i).y});
+                frame_pos.push_back({squares.front().at(i).x, squares.front().at(i).y});
             }
 
             std::sort(frame_pos.begin(), frame_pos.end());
@@ -770,4 +783,13 @@ float Detection::inner_product(std::tuple<float, float, float> a, std::tuple<flo
 float3tuple Detection::outer_product(std::tuple<float, float, float> a, std::tuple<float, float, float> b)
 {
     return float3tuple(std::get<1>(a) * std::get<2>(b) - std::get<2>(a) * std::get<1>(b), std::get<2>(a) * std::get<0>(b) - std::get<0>(a) * std::get<2>(b), std::get<0>(a) * std::get<1>(b) - std::get<1>(a) * std::get<0>(b));
+}
+void Detection::CallBackFunc(int eventType, int x, int y, int flags, void* userdata)
+{
+    mouseParam *ptr = static_cast<mouseParam*> (userdata);
+
+    ptr->x = x;
+    ptr->y = y;
+    ptr->event = eventType;
+    ptr->flags = flags;
 }

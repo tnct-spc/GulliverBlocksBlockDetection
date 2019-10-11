@@ -21,6 +21,7 @@
 #include <numeric>
 #include <thread>
 #include <chrono>
+#include <unistd.h>
 
 struct float3tuple //std::tupleは遅い
 {
@@ -36,6 +37,13 @@ struct float3tuple //std::tupleは遅い
         z = c;
     }
     
+};
+
+struct mouseParam {
+    int x;
+    int y;
+    int event;
+    int flags;
 };
 
 
@@ -86,12 +94,15 @@ public:
     std::vector<float3tuple> getDepth();
     std::vector<std::pair<float3tuple, std::tuple<int, int, int>>> getDepthAndColor();
 
+
     void detectBoard();
     float3tuple translatePixelToP3DPoint(float x, float y);
     float3tuple translatePixelToP3DPoint(float x, float y, rs2_intrinsics& intr, rs2::depth_frame& depth);
 
     float3tuple translatePlanePoint(float x, float y, float z);
     float3tuple translatePlanePoint(float3tuple point_pos);
+
+    static void CallBackFunc(int eventType, int x, int y, int flags, void* userdata);
 
     float inner_product(std::tuple<float, float, float> a, std::tuple<float, float, float> b);
     float3tuple outer_product(std::tuple<float, float, float> a, std::tuple<float, float, float> b);
