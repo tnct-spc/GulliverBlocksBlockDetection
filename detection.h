@@ -38,6 +38,13 @@ struct float3tuple //std::tupleは遅い
     
 };
 
+struct mouseParam {
+    int x;
+    int y;
+    int event;
+    int flags;
+};
+
 
 class Detection{
 private:
@@ -93,6 +100,8 @@ public:
 
     float3tuple translatePlanePoint(float x, float y, float z);
     float3tuple translatePlanePoint(float3tuple point_pos);
+
+    static void CallBackFunc(int eventType, int x, int y, int flags, void* userdata);
 
     float inner_product(std::tuple<float, float, float> a, std::tuple<float, float, float> b);
     float3tuple outer_product(std::tuple<float, float, float> a, std::tuple<float, float, float> b);
