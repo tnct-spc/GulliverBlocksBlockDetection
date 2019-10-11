@@ -383,15 +383,21 @@ std::pair<std::vector<std::pair<std::tuple<int, int, int>, int>>, std::vector<st
         int y = std::get<1>(v.first);
         int z = std::get<2>(v.first);
         int color = v.second;
-        bool usitapu = false;
-        for(int i = 0;i < 8;i++){
-            if(0 <= x + dx[i] && x + dx[i] < BoardEdgeNum && 0 <= y + dy[i] && y + dy[i] < BoardEdgeNum){
-                if(field.at(x + dx[i]).at(y + dy[i]).find(std::make_pair(y, color)) == field.at(x + dx[i]).at(y + dy[i]).end()){
-                    
+        bool is_neer_block_exist = false;
+        for(int i = 0 ; i < 8 ; i++){
+            if(0 <= x + dx[i] && x + dx[i] < BoardEdgeNum && 0 <= z + dy[i] && z + dy[i] < BoardEdgeNum){
+                if(field.at(x + dx[i]).at(z + dy[i]).find(std::make_pair(y, color)) == field.at(x + dx[i]).at(z + dy[i]).end()){
+                    is_neer_block_exist = true;
                 }
             }
         }
+        if(is_neer_block_exist){
+            add_ins.push_back(v);
+        }else{
+            field.at(x).at(z).erase(std::make_pair(y, color));
+        }
     }
+    add = add_ins;
 
     std::sort(data_num_lists.begin(), data_num_lists.end());
     std::sort(depth_data_list.begin(), depth_data_list.end());
