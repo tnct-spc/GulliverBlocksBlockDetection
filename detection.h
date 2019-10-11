@@ -21,6 +21,7 @@
 #include <numeric>
 #include <thread>
 #include <chrono>
+#include <unistd.h>
 
 struct float3tuple //std::tupleは遅い
 {

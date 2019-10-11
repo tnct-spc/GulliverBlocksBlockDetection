@@ -405,6 +405,9 @@ std::pair<std::vector<std::pair<std::tuple<int, int, int>, int>>, std::vector<st
 
 void Detection::detectBoard()
 {
+    bool is_fisrt = true;
+
+
     //realsenseで写真取ってopencvで矩形認識 -> 得られたpixelをさらにrealsenseで三次元座標に
     //https://github.com/opencv/opencv/blob/master/samples/cpp/squares.cpp <- 矩形認識
     //https://github.com/IntelRealSense/librealsense/blob/master/wrappers/opencv/cv-helpers.hpp <- opencvとrealsenseの連携
@@ -499,7 +502,7 @@ void Detection::detectBoard()
             polylines(image, &p, &n, 1, true, cv::Scalar(0, 255, 0), 3, cv::LINE_AA);
         }
 
-            imshow("TestSquares", image);
+            imshow("detectBoard", image);
             int c = cv::waitKey();
     };
     auto Distance = [](float3tuple a, float3tuple b) {
@@ -532,6 +535,12 @@ void Detection::detectBoard()
                 auto im = pipe.wait_for_frames().get_color_frame();
                 // std::cout<<"BBB"<<std::endl;
                 cv::Mat image = frame_to_mat(im);
+                if(is_fisrt){
+                    cv::imshow("detectBoard", image);
+                    int c = cv::waitKey();
+                    is_fisrt = false;
+                    continue;
+                }
                 std::cout << image.rows << " " << image.cols << std::endl;
 
                 std::cout << "capture" << std::endl;
@@ -547,15 +556,14 @@ void Detection::detectBoard()
                 mouseParam mouseEvent;
                 cv::imshow("detectBoard", image);
                 cv::setMouseCallback("detectBoard", CallBackFunc, &mouseEvent);
-                std::vector<cv::Point> Pos;
-                for(int i = 0;i < 4;){
-                    cv::waitKey(20);
+                std::set<std::pair<int, int>> Pos;
+                for(;Pos.size() < 4;){
+                    cv::waitKey(1);
                     //左クリックがあったら表示
                     if (mouseEvent.event == cv::EVENT_LBUTTONDOWN) {
                         //クリック後のマウスの座標を出力
                         std::cout << mouseEvent.x << " , " << mouseEvent.y << std::endl;
-                        Pos.push_back(cv::Point(mouseEvent.x, mouseEvent.y));
-                        i++;
+                        Pos.insert(std::make_pair(mouseEvent.x, mouseEvent.y));
                     }
                     //右クリックがあったら終了
                     else if (mouseEvent.event == cv::EVENT_RBUTTONDOWN) {
@@ -563,8 +571,10 @@ void Detection::detectBoard()
                         abort();
                     }
                 }
-                squares.push_back(Pos);
-                //drawSquares(image, squares);
+                std::vector<cv::Point> usi;
+                for(auto a : Pos)usi.push_back(cv::Point(a.first, a.second));
+                squares.push_back(usi);
+                drawSquares(image, squares);
             } while (squares.empty());
 
             std::vector<std::pair<int, int>> frame_pos;
