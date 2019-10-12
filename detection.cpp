@@ -351,12 +351,12 @@ std::pair<std::vector<std::pair<std::tuple<int, int, int>, int>>, std::vector<st
 
             if(color == BlockColors.size() - 1)color = 12;
 
-            auto a = *field.at(i).at(j).upper_bound({high, -1});
-            if(a.first == high && high != 0 && a.second != color){
+            auto in = *field.at(i).at(j).upper_bound({high, -1});
+            if(in.first == high && high != 0 && in.second != color){
                 remove.push_back(std::make_tuple(i, high, j));
                 add.push_back(std::make_pair(std::make_tuple(i, high, j), color));
                 field.at(i).at(j).insert({high, color});
-                field.at(i).at(j).erase(a);
+                field.at(i).at(j).erase(in);
             }
 
             if (high != 0 && field.at(i).at(j).find({high, color}) == field.at(i).at(j).end())
@@ -375,6 +375,30 @@ std::pair<std::vector<std::pair<std::tuple<int, int, int>, int>>, std::vector<st
             
         }
     }
+    std::vector<std::pair<std::tuple<int, int, int>, int>> add_ins;
+    int dx[] = {1, 1, 1, 0, -1, -1, -1, 0};
+    int dy[] = {1, 0, -1, -1, -1, 0, 1, 1};
+    for(auto v : add){
+        int x = std::get<0>(v.first);
+        int y = std::get<1>(v.first);
+        int z = std::get<2>(v.first);
+        int color = v.second;
+        bool is_neer_block_exist = false;
+        for(int i = 0 ; i < 8 ; i++){
+            if(0 <= x + dx[i] && x + dx[i] < BoardEdgeNum && 0 <= z + dy[i] && z + dy[i] < BoardEdgeNum){
+                if(field.at(x + dx[i]).at(z + dy[i]).find(std::make_pair(y, color)) != field.at(x + dx[i]).at(z + dy[i]).end()){
+                    is_neer_block_exist = true;
+                }
+            }
+        }
+        if(is_neer_block_exist){
+            add_ins.push_back(v);
+        }else{
+            field.at(x).at(z).erase(std::make_pair(y, color));
+        }
+    }
+    add = add_ins;
+
     std::sort(data_num_lists.begin(), data_num_lists.end());
     std::sort(depth_data_list.begin(), depth_data_list.end());
     std::sort(color_distance_list.begin(), color_distance_list.end());
