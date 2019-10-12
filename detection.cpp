@@ -386,7 +386,7 @@ std::pair<std::vector<std::pair<std::tuple<int, int, int>, int>>, std::vector<st
         bool is_neer_block_exist = false;
         for(int i = 0 ; i < 8 ; i++){
             if(0 <= x + dx[i] && x + dx[i] < BoardEdgeNum && 0 <= z + dy[i] && z + dy[i] < BoardEdgeNum){
-                if(field.at(x + dx[i]).at(z + dy[i]).find(std::make_pair(y, color)) == field.at(x + dx[i]).at(z + dy[i]).end()){
+                if(field.at(x + dx[i]).at(z + dy[i]).find(std::make_pair(y, color)) != field.at(x + dx[i]).at(z + dy[i]).end()){
                     is_neer_block_exist = true;
                 }
             }
