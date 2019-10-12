@@ -377,7 +377,7 @@ std::pair<std::vector<std::pair<std::tuple<int, int, int>, int>>, std::vector<st
     }
     std::vector<std::pair<std::tuple<int, int, int>, int>> add_ins;
     int dx[] = {1, 1, 1, 0, -1, -1, -1, 0};
-    int dy[] = {1, 0, -1, -1, -1, 0, 1, 1};
+    int dz[] = {1, 0, -1, -1, -1, 0, 1, 1};
     for(auto v : add){
         int x = std::get<0>(v.first);
         int y = std::get<1>(v.first);
@@ -385,8 +385,8 @@ std::pair<std::vector<std::pair<std::tuple<int, int, int>, int>>, std::vector<st
         int color = v.second;
         bool is_neer_block_exist = false;
         for(int i = 0 ; i < 8 ; i++){
-            if(0 <= x + dx[i] && x + dx[i] < BoardEdgeNum && 0 <= z + dy[i] && z + dy[i] < BoardEdgeNum){
-                if(field.at(x + dx[i]).at(z + dy[i]).find(std::make_pair(y, color)) != field.at(x + dx[i]).at(z + dy[i]).end()){
+            if(0 <= x + dx[i] && x + dx[i] < BoardEdgeNum && 0 <= z + dz[i] && z + dz[i] < BoardEdgeNum){
+                if(field.at(x + dx[i]).at(z + dz[i]).find(std::make_pair(y, color)) != field.at(x + dx[i]).at(z + dz[i]).end()){
                     is_neer_block_exist = true;
                 }
             }
@@ -394,6 +394,7 @@ std::pair<std::vector<std::pair<std::tuple<int, int, int>, int>>, std::vector<st
         if(is_neer_block_exist){
             add_ins.push_back(v);
         }else{
+            std::cout<<"USITAPU"<<std::endl;
             field.at(x).at(z).erase(std::make_pair(y, color));
         }
     }
@@ -542,6 +543,7 @@ void Detection::detectBoard()
 
     int frame_num = 3;
     BoardPosBasedData = std::vector<float3tuple>(4);
+    std::vector<std::vector<cv::Point>> squares;
 
     for (int frame_idx = 0; frame_idx < frame_num; frame_idx++)
     {
@@ -549,13 +551,12 @@ void Detection::detectBoard()
         std::vector<float3tuple> ProvisionalBoardPosBasedData;
         do
         {
-            std::vector<std::vector<cv::Point>> squares;
-
             rs2::colorizer color_map;
             rs2::rates_printer printer;
 
             do
             {
+                if(!squares.empty())break;
                 auto im = pipe.wait_for_frames().get_color_frame();
                 // std::cout<<"BBB"<<std::endl;
                 cv::Mat image = frame_to_mat(im);
