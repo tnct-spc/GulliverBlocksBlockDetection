@@ -22,7 +22,7 @@ void Manager::RunSingleDetection(){
             std::cout<<std::get<0>(detect_info.second.at(i))<<" "<<std::get<1>(detect_info.second.at(i))<<" "<<std::get<2>(detect_info.second.at(i))<<std::endl;
         }
         std::cout<<detect_info.second.size()<<": Deleted"<<std::endl;
-        std::string url = "http://gulliverblocks.herokuapp.com/add_blocks/4d343ae9-dabb-4598-a3d8-de6b45a8a722/";
+        std::string url = "http://gulliverblocks.herokuapp.com/add_blocks/33a035f1-fdf6-482e-a1f6-3245aa83274b/";
         //std::string url = "http://192.168.1.38:5000/add_blocks/00287dba-e288-4eb4-9f4d-cd3bd5f7e82d/";
         Poster.postJson(url, detect_info);
     }
