@@ -3,8 +3,8 @@
 Detection::Detection()
 {
 
-    cfg.enable_stream(RS2_STREAM_COLOR, 1280, 720, RS2_FORMAT_RGB8, 6);
-    cfg.enable_stream(RS2_STREAM_DEPTH, 1280, 720, RS2_FORMAT_Z16, 6);
+    cfg.enable_stream(RS2_STREAM_COLOR, 1280, 720, RS2_FORMAT_RGB8, 15);
+    cfg.enable_stream(RS2_STREAM_DEPTH, 1280, 720, RS2_FORMAT_Z16, 15);
 
     pipe.start(cfg);
 
@@ -65,6 +65,7 @@ Detection::Detection()
             }
         }
     }
+    
     cv::Mat M(960, 960, CV_8UC3, cv::Scalar(0,0,0));
     std::vector<float> depth_lists;
     for (int i = 0; i < BoardEdgeNum; i++)
@@ -121,6 +122,18 @@ Detection::Detection()
     }
     cv::imshow("Visualizer", M);
     int c = cv::waitKey();
+    std::vector<std::tuple<int, int, int, int>> def = {std::make_tuple(4, 25, 1, 2), std::make_tuple(4, 26, 1, 0), std::make_tuple(4, 27, 1, 0), std::make_tuple(4, 28, 1, 2), std::make_tuple(5, 25, 1, 2), std::make_tuple(5, 26, 1, 0), std::make_tuple(5, 27, 1, 0), std::make_tuple(5, 28, 1, 2), std::make_tuple(6, 25, 1, 2), std::make_tuple(6, 26, 1, 0), std::make_tuple(6, 27, 1, 0), std::make_tuple(6, 28, 1, 2), std::make_tuple(7, 25, 1, 2), std::make_tuple(7, 26, 1, 0), std::make_tuple(7, 27, 1, 0), std::make_tuple(7, 28, 1, 2), std::make_tuple(8, 25, 1, 2), std::make_tuple(8, 26, 1, 0), std::make_tuple(8, 27, 1, 0), std::make_tuple(8, 28, 1, 2), std::make_tuple(9, 8, 1, 12), std::make_tuple(9, 9, 1, 12), std::make_tuple(9, 10, 1, 12), std::make_tuple(9, 11, 1, 12), std::make_tuple(9, 25, 1, 2), std::make_tuple(9, 26, 1, 0), std::make_tuple(9, 27, 1, 0), std::make_tuple(9, 28, 1, 2), std::make_tuple(10, 8, 1, 12), std::make_tuple(10, 9, 1, 12), std::make_tuple(10, 10, 1, 12), std::make_tuple(10, 11, 1, 12), std::make_tuple(10, 25, 1, 2), std::make_tuple(10, 26, 1, 0), std::make_tuple(10, 27, 1, 0), std::make_tuple(10, 28, 1, 2), std::make_tuple(11, 8, 1, 12), std::make_tuple(11, 9, 1, 12), std::make_tuple(11, 10, 1, 12), std::make_tuple(11, 11, 1, 12), std::make_tuple(11, 26, 1, 0), std::make_tuple(11, 27, 1, 0), std::make_tuple(11, 28, 1, 2), std::make_tuple(12, 8, 1, 1), std::make_tuple(12, 9, 1, 1), std::make_tuple(12, 10, 1, 1), std::make_tuple(12, 11, 1, 1), std::make_tuple(12, 25, 1, 2), std::make_tuple(12, 26, 1, 0), std::make_tuple(12, 27, 1, 0), std::make_tuple(12, 28, 1, 2), std::make_tuple(13, 8, 1, 1), std::make_tuple(13, 9, 1, 1), std::make_tuple(13, 10, 1, 1), std::make_tuple(13, 11, 1, 1), std::make_tuple(13, 25, 1, 2), std::make_tuple(13, 26, 1, 0), std::make_tuple(13, 27, 1, 0), std::make_tuple(13, 28, 1, 2), std::make_tuple(14, 25, 1, 2), std::make_tuple(14, 26, 1, 0), std::make_tuple(14, 27, 1, 0), std::make_tuple(14, 28, 1, 2), std::make_tuple(15, 25, 1, 2), std::make_tuple(15, 26, 1, 0), std::make_tuple(15, 27, 1, 0), std::make_tuple(15, 28, 1, 2), std::make_tuple(16, 25, 1, 2), std::make_tuple(16, 26, 1, 0), std::make_tuple(16, 27, 1, 0), std::make_tuple(16, 28, 1, 2), std::make_tuple(17, 25, 1, 2), std::make_tuple(17, 26, 1, 0), std::make_tuple(17, 27, 1, 0), std::make_tuple(17, 28, 1, 2), std::make_tuple(18, 25, 1, 2), std::make_tuple(18, 26, 1, 0), std::make_tuple(18, 27, 1, 0), std::make_tuple(18, 28, 1, 2), std::make_tuple(19, 25, 1, 2), std::make_tuple(19, 26, 1, 0), std::make_tuple(19, 27, 1, 0), std::make_tuple(19, 28, 1, 2), std::make_tuple(20, 25, 1, 2), std::make_tuple(20, 26, 1, 0), std::make_tuple(20, 27, 1, 0), std::make_tuple(20, 28, 1, 2), std::make_tuple(21, 13, 1, 6), std::make_tuple(21, 13, 2, 6), std::make_tuple(21, 13, 3, 6), std::make_tuple(21, 14, 1, 6), std::make_tuple(21, 14, 2, 6), std::make_tuple(21, 14, 3, 6), std::make_tuple(21, 15, 3, 6), std::make_tuple(21, 16, 3, 6), std::make_tuple(21, 17, 1, 6), std::make_tuple(21, 17, 2, 6), std::make_tuple(21, 17, 3, 6), std::make_tuple(21, 18, 1, 6), std::make_tuple(21, 18, 2, 6), std::make_tuple(21, 18, 3, 6), std::make_tuple(22, 13, 1, 6), std::make_tuple(22, 13, 2, 6), std::make_tuple(22, 13, 3, 6), std::make_tuple(22, 14, 1, 6), std::make_tuple(22, 14, 2, 6), std::make_tuple(22, 14, 3, 6), std::make_tuple(22, 15, 3, 6), std::make_tuple(22, 16, 3, 6), std::make_tuple(22, 17, 1, 6), std::make_tuple(22, 17, 2, 6), std::make_tuple(22, 17, 3, 6), std::make_tuple(22, 18, 1, 6), std::make_tuple(22, 18, 2, 6), std::make_tuple(22, 18, 3, 6), std::make_tuple(23, 13, 1, 6), std::make_tuple(23, 13, 2, 6), std::make_tuple(23, 13, 3, 6), std::make_tuple(23, 14, 1, 6), std::make_tuple(23, 14, 2, 6), std::make_tuple(23, 14, 3, 6), std::make_tuple(23, 15, 3, 6), std::make_tuple(23, 16, 3, 6), std::make_tuple(23, 17, 1, 6), std::make_tuple(23, 17, 2, 6), std::make_tuple(23, 17, 3, 6), std::make_tuple(23, 18, 1, 6), std::make_tuple(23, 18, 2, 6), std::make_tuple(23, 18, 3, 6), std::make_tuple(24, 13, 1, 6), std::make_tuple(24, 13, 2, 6), std::make_tuple(24, 13, 3, 6), std::make_tuple(24, 14, 1, 6), std::make_tuple(24, 14, 2, 6), std::make_tuple(24, 14, 3, 6), std::make_tuple(24, 15, 3, 6), std::make_tuple(24, 16, 3, 6), std::make_tuple(24, 17, 1, 6), std::make_tuple(24, 17, 2, 6), std::make_tuple(24, 17, 3, 6), std::make_tuple(24, 18, 1, 6), std::make_tuple(24, 18, 2, 6), std::make_tuple(24, 18, 3, 6), std::make_tuple(25, 13, 1, 6), std::make_tuple(25, 13, 2, 6), std::make_tuple(25, 13, 3, 6), std::make_tuple(25, 14, 1, 6), std::make_tuple(25, 14, 2, 6), std::make_tuple(25, 14, 3, 6), std::make_tuple(25, 15, 1, 6), std::make_tuple(25, 15, 2, 6), std::make_tuple(25, 15, 3, 6), std::make_tuple(25, 16, 1, 6), std::make_tuple(25, 16, 2, 6), std::make_tuple(25, 16, 3, 6), std::make_tuple(25, 17, 1, 6), std::make_tuple(25, 17, 2, 6), std::make_tuple(25, 17, 3, 6), std::make_tuple(25, 18, 1, 6), std::make_tuple(25, 18, 2, 6), std::make_tuple(25, 18, 3, 6), std::make_tuple(26, 13, 1, 6), std::make_tuple(26, 13, 2, 6), std::make_tuple(26, 13, 3, 6), std::make_tuple(26, 14, 1, 6), std::make_tuple(26, 14, 2, 6), std::make_tuple(26, 14, 3, 6), std::make_tuple(26, 15, 1, 6), std::make_tuple(26, 15, 2, 6), std::make_tuple(26, 15, 3, 6), std::make_tuple(26, 16, 1, 6), std::make_tuple(26, 16, 2, 6), std::make_tuple(26, 16, 3, 6), std::make_tuple(26, 17, 1, 6), std::make_tuple(26, 17, 2, 6), std::make_tuple(26, 17, 3, 6), std::make_tuple(26, 18, 1, 6), std::make_tuple(26, 18, 2, 6), std::make_tuple(26, 18, 3, 6)};
+    std::vector<std::pair<std::tuple<int, int, int>, int>> add;
+    for(auto a : def){
+        field.at(std::get<0>(a)).at(std::get<1>(a)).insert(std::make_pair(std::get<2>(a), std::get<3>(a)));
+        add.push_back(std::make_pair(std::make_tuple(std::get<0>(a), std::get<2>(a), std::get<1>(a)), std::get<3>(a)));
+    }
+    Communication com;
+    std::string url = "http://gulliverblocks.herokuapp.com/add_blocks/33a035f1-fdf6-482e-a1f6-3245aa83274b/";
+
+    com.postJson(url, std::make_pair(add, std::vector<std::tuple<int, int, int>>()));
+    std::cout<<"うしたぷにきあくんあ"<<std::endl;
+    int b;std::cin >> b;
 }
 
 std::vector<float3tuple> Detection::getDepth()
@@ -181,8 +194,8 @@ std::vector<std::pair<float3tuple, std::tuple<int, int, int>>> Detection::getDep
         throw std::runtime_error("Frame format is not supported yet!");
     };
 
-    float width = 1280;
-    float height = 720;
+    int width = 1280;
+    int height = 720;
     std::vector<std::pair<float3tuple, std::tuple<int, int, int>>> data;
     rs2::frameset frames = pipe.wait_for_frames();
     rs2::align align(RS2_STREAM_COLOR);
@@ -231,7 +244,7 @@ std::pair<std::vector<std::pair<std::tuple<int, int, int>, int>>, std::vector<st
     std::chrono::system_clock::time_point start, end;
     start = std::chrono::system_clock::now();
 
-    int frame_num = 2;
+    int frame_num = 3;
     std::vector<std::vector<std::vector<std::vector<float>>>> multiframe_data = std::vector<std::vector<std::vector<std::vector<float>>>>(BoardEdgeNum, std::vector<std::vector<std::vector<float>>>(BoardEdgeNum, std::vector<std::vector<float>>(frame_num, std::vector<float>({}))));
     //std::vector<std::vector<bool>> hand_flag(BoardEdgeNum, std::vector<bool>(BoardEdgeNum, true)); //手の判定
     std::vector<std::vector<std::vector<float>>> data = std::vector<std::vector<std::vector<float>>>(BoardEdgeNum, std::vector<std::vector<float>>(BoardEdgeNum, std::vector<float>({})));
@@ -370,9 +383,6 @@ std::pair<std::vector<std::pair<std::tuple<int, int, int>, int>>, std::vector<st
             {
                 std::cout << "average is nan" << std::endl;
             }
-            
-           
-            
         }
     }
     std::vector<std::pair<std::tuple<int, int, int>, int>> add_ins;
@@ -394,7 +404,6 @@ std::pair<std::vector<std::pair<std::tuple<int, int, int>, int>>, std::vector<st
         if(is_neer_block_exist){
             add_ins.push_back(v);
         }else{
-            std::cout<<"USITAPU"<<std::endl;
             field.at(x).at(z).erase(std::make_pair(y, color));
         }
     }
@@ -421,6 +430,19 @@ std::pair<std::vector<std::pair<std::tuple<int, int, int>, int>>, std::vector<st
     }
     //cv::imshow("Visualizer", M);
     //int c = cv::waitKey();
+    /*
+    std::cout<<"{";
+    for(int i = 0;i < BoardEdgeNum;i++){
+        for(int j = 0;j < BoardEdgeNum;j++){
+            for(auto a : field.at(i).at(j)){
+                std::cout<<"std::make_tuple("<<i<<", "<<j<<", "<<a.first<<", "<<a.second<<"), ";
+            }
+        }
+    }
+    */
+    std::cout<<"}"<<std::endl;
+    
+
     end = std::chrono::system_clock::now();
     double time = static_cast<double>(std::chrono::duration_cast<std::chrono::microseconds>(end - start).count() / 1000.0);
     std::cout << time / 1000 << "s" << std::endl;

@@ -1,4 +1,3 @@
-#include "communication.h" 
 #include "detection.h"
 #include <iostream>
 #include <unistd.h>

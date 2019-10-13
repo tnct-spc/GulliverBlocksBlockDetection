@@ -22,6 +22,7 @@
 #include <thread>
 #include <chrono>
 #include <unistd.h>
+#include "communication.h"
 
 struct float3tuple //std::tupleは遅い
 {
@@ -61,8 +62,8 @@ private:
     const float BlockHighthresh = 0.5;
 
     //const std::vector<std::tuple<int, int, int>> BlockColors = { std::make_tuple(8, 25, 37), std::make_tuple(152, 18, 35), std::make_tuple(180, 162, 60), std::make_tuple(1e3, 1e3, 1e3), std::make_tuple(1e3, 1e3, 1e3), std::make_tuple(1e3, 1e3, 1e3), std::make_tuple(0, 80, 173), std::make_tuple(0, 93, 84), std::make_tuple(1e3, 1e3, 1e3), std::make_tuple(156, 201, 240) };
-    const std::vector<std::tuple<int, int, int>> BlockColors = { std::make_tuple(42, 44, 50), std::make_tuple(179, 34, 52), std::make_tuple(236, 168, 67), std::make_tuple(1e3, 1e3, 1e3), std::make_tuple(1e3, 1e3, 1e3), std::make_tuple(1e3, 1e3, 1e3), std::make_tuple(0, 100, 160), std::make_tuple(13, 103, 79), std::make_tuple(1e3, 1e3, 1e3), std::make_tuple(223, 209, 222) };
-
+    //const std::vector<std::tuple<int, int, int>> BlockColors = { std::make_tuple(42, 44, 50), std::make_tuple(179, 34, 52), std::make_tuple(236, 168, 67), std::make_tuple(1e3, 1e3, 1e3), std::make_tuple(1e3, 1e3, 1e3), std::make_tuple(1e3, 1e3, 1e3), std::make_tuple(0, 100, 160), std::make_tuple(13, 103, 79), std::make_tuple(1e3, 1e3, 1e3), std::make_tuple(223, 209, 222) };
+    const std::vector<std::tuple<int, int, int>> BlockColors = { std::make_tuple(8, 28, 33), std::make_tuple(145, 42, 51), std::make_tuple(185, 174, 68), std::make_tuple(1e3, 1e3, 1e3), std::make_tuple(1e3, 1e3, 1e3), std::make_tuple(1e3, 1e3, 1e3), std::make_tuple(0, 89, 173), std::make_tuple(0, 94, 68), std::make_tuple(1e3, 1e3, 1e3), std::make_tuple(176, 207, 232) };
 public:
     std::vector<float3tuple> BoardPosBasedData;
     std::vector<std::vector<std::set<std::pair<int, int>>>> field;
