@@ -119,8 +119,8 @@ Detection::Detection()
     for(int i = 0;i < 10;i++){
         std::cout<<i<<" "<<depth_lists.at(i)<<std::endl;
     }
-    cv::imshow("Visualizer", M);
-    int c = cv::waitKey();
+    //cv::imshow("Visualizer", M);
+    //int c = cv::waitKey();
 }
 
 std::vector<float3tuple> Detection::getDepth()
